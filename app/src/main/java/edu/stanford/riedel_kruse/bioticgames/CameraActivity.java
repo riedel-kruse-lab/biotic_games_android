@@ -2,21 +2,13 @@ package edu.stanford.riedel_kruse.bioticgames;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.hardware.Camera;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SurfaceView;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -27,88 +19,13 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.video.BackgroundSubtractorMOG;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CameraActivity extends Activity { //implements CvCameraViewListener2 {
-    public static String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch(status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
-                    Log.i(TAG, "OpenCV loaded successfully");
-
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inJustDecodeBounds = true;
-                    BitmapFactory.decodeResource(getResources(), R.drawable.euglena, options);
-
-                    options.inSampleSize = calculateInSampleSize(options, 100, 100);
-
-                    options.inJustDecodeBounds = false;
-                    break;
-                }
-                default:
-                {
-                    super.onManagerConnected(status);
-                    break;
-                }
-            }
-        }
-    };
-
-    //private CameraBridgeViewBase mOpenCvCameraView;
-
-    private Camera mCamera;
-    private ImageView mContoursImage;
-    private ImageView mGrayscaleImage;
-    private ImageView mOriginalImage;
-    private CameraPreview mPreview;
-    private ImageView mHSVThresholdedImage;
-
-    public static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight)
-    {
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth)
-        {
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            while ((halfHeight / inSampleSize) > reqHeight &&
-                    (halfWidth / inSampleSize) > reqWidth)
-            {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
-    }
-
-    public static Camera getCameraInstance()
-    {
-        Camera c = null;
-        try
-        {
-            c = Camera.open();
-        }
-        catch (Exception e)
-        {
-
-        }
-
-        return c;
-    }
-
+public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2
+{
     /** Activity lifecycle callbacks */
 
     @Override
@@ -116,52 +33,31 @@ public class CameraActivity extends Activity { //implements CvCameraViewListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
-        mCamera = getCameraInstance();
-        Camera.Parameters parameters = mCamera.getParameters();
-        parameters.setZoom(parameters.getMaxZoom());
-        mCamera.setParameters(parameters);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        mPreview = new CameraPreview(this, mCamera);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-        preview.addView(mPreview);
-
-        /*mContoursImage = (ImageView) findViewById(R.id.contours_image);
-        mGrayscaleImage = (ImageView) findViewById(R.id.grayscale_image);
-        mHSVThresholdedImage = (ImageView) findViewById(R.id.hsv_thresholded_image);
-        mOriginalImage = (ImageView) findViewById(R.id.original_image);*/
-
-        /*mOpenCvCameraView = (CameraBridgeViewBase)findViewById(R.id.HelloOpenCvView);
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);*/
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
+        mOpenCvCameraView.setCvCameraViewListener(this);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        /*if (mOpenCvCameraView != null)
-        {
-            mOpenCvCameraView.disableView();
-        }*/
+        disableCameraView();
     }
 
     @Override
     public void onPause()
     {
         super.onPause();
-        /*if (mOpenCvCameraView != null)
-        {
-            mOpenCvCameraView.disableView();
-        }*/
+        disableCameraView();
     }
 
     @Override
     public void onResume()
     {
         super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_6, this, mLoaderCallback);
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
     }
-
-    /** End activity lifecycle callbacks */
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -185,10 +81,27 @@ public class CameraActivity extends Activity { //implements CvCameraViewListener
         return super.onOptionsItemSelected(item);
     }
 
-    public void setCameraBitmap(Bitmap bitmap)
+    /** End activity lifecycle callbacks */
+
+    private void disableCameraView()
     {
-        Log.d(TAG, "setCameraBitmap called.");
-        ((ImageView) findViewById(R.id.camera_bitmap)).setImageBitmap(processImage(bitmap));
+        if (mOpenCvCameraView != null)
+        {
+            mOpenCvCameraView.disableView();
+        }
+    }
+
+    private Mat processMat(Mat mat)
+    {
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2HSV);
+        Core.inRange(mat, new Scalar(50, 15, 0), new Scalar(96, 175, 255), mat);
+
+        Imgproc.erode(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
+        Imgproc.dilate(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
+
+        Imgproc.dilate(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2)));
+
+        return mat;
     }
 
     private Bitmap processImage(Bitmap bitmap)
@@ -238,17 +151,36 @@ public class CameraActivity extends Activity { //implements CvCameraViewListener
         return contoursBitmap;
     }
 
+    public static String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
+    private CameraBridgeViewBase mOpenCvCameraView;
+
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch(status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    mOpenCvCameraView.enableView();
+                    break;
+                }
+                default:
+                {
+                    super.onManagerConnected(status);
+                    break;
+                }
+            }
+        }
+    };
+
     /** CvCameraViewListener2 Interface */
 
-    /*public void onCameraViewStarted(int width, int height) {}
+    public void onCameraViewStarted(int width, int height) {}
 
     public void onCameraViewStopped() {}
 
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-        mBackgroundSubtractor.apply(inputFrame.gray(), mForegroundMask);
-        //return inputFrame.gray();
-        return mForegroundMask;
-    }*/
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        return inputFrame.rgba();
+    }
 
     /** End CvCameraViewListener2 */
 }
