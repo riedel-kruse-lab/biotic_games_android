@@ -7,10 +7,18 @@
     tools:context=".CameraActivity">
 
     <edu.stanford.riedel_kruse.bioticgames.CameraView
+        android:id="@+id/camera_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:id="@+id/camera_view"
         opencv:show_fps="true"
-        opencv:camera_id="any"/>
+        opencv:camera_id="any"
+        android:layout_weight="1" />
+
+    <ImageView
+        android:id="@+id/debug_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:visibility="gone" />
 
 </LinearLayout>

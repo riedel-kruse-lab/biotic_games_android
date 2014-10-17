@@ -3,9 +3,12 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -20,6 +23,7 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 import org.opencv.video.BackgroundSubtractorMOG;
 
 import java.util.ArrayList;
@@ -36,8 +40,17 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        mDebugImageView = (ImageView) findViewById(R.id.debug_view);
+        if (DEBUG_MODE)
+        {
+            mDebugImageView.setVisibility(View.VISIBLE);
+        }
+
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        mCentroids = new ArrayList<Point>();
+        mContours = new ArrayList<MatOfPoint>();
     }
 
     @Override
@@ -92,8 +105,88 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
+    private void debugShowMat(Mat mat)
+    {
+        if (DEBUG_MODE)
+        {
+            int width = mat.cols();
+            int height = mat.rows();
+            if (mDebugBitmap == null)
+            {
+                mDebugBitmap = Bitmap.createBitmap(width, height,
+                        Bitmap.Config.ARGB_8888);
+            }
+
+            if (mDebugBitmap.getWidth() != width)
+            {
+                mDebugBitmap.setWidth(width);
+            }
+
+            if (mDebugBitmap.getHeight() != height)
+            {
+                mDebugBitmap.setHeight(height);
+            }
+
+            Utils.matToBitmap(mat, mDebugBitmap);
+
+            Handler mainHandler = new Handler(getMainLooper());
+            mainHandler.post(new Runnable()
+            {
+                public void run()
+                {
+                    mDebugImageView.setImageBitmap(mDebugBitmap);
+                }
+            });
+        }
+    }
+
+    private Mat processFrame(Mat frameGray, Mat frameRgba)
+    {
+        // Update the background subtraction model
+        mBackgroundSubtractor.apply(frameGray, mForegroundMask);
+
+        debugShowMat(mForegroundMask);
+
+        findContours();
+        if (DEBUG_MODE)
+        {
+            Imgproc.drawContours(frameRgba, mContours, -1, new Scalar(255, 0, 0), 1);
+        }
+
+        findContourCentroids();
+        if (DEBUG_MODE)
+        {
+            for (Point centroid : mCentroids)
+            {
+                Core.circle(frameRgba, centroid, 4, new Scalar(0, 255, 0));
+            }
+        }
+
+        return frameRgba;
+    }
+
+    private void findContours()
+    {
+        mContours.clear();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(mForegroundMask, mContours, hierarchy, Imgproc.RETR_TREE,
+                Imgproc.CHAIN_APPROX_SIMPLE);
+    }
+
+    private void findContourCentroids()
+    {
+        mCentroids.clear();
+        for (MatOfPoint contour : mContours)
+        {
+            Moments p = Imgproc.moments(contour, false);
+            Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
+            mCentroids.add(centroid);
+        }
+    }
+
     private Mat processForeground()
     {
+
         return mForegroundMask;
     }
 
@@ -144,10 +237,16 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return contoursBitmap;
     }
 
-    public static String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
+    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
+    public static final boolean DEBUG_MODE = true;
+
+    private ImageView mDebugImageView;
+    private Bitmap mDebugBitmap;
     private CameraBridgeViewBase mOpenCvCameraView;
     private BackgroundSubtractorMOG mBackgroundSubtractor;
     private Mat mForegroundMask;
+    private List<Point> mCentroids;
+    private List<MatOfPoint> mContours;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -176,10 +275,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public void onCameraViewStopped() {}
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        // Update the background subtraction model
-        mBackgroundSubtractor.apply(inputFrame.gray(), mForegroundMask);
-        // Do image processing on the foreground mask
-        return processForeground();
+        return processFrame(inputFrame.gray(), inputFrame.rgba());
     }
 
     /** End CvCameraViewListener2 */
