@@ -20,6 +20,7 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.video.BackgroundSubtractorMOG;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,17 +92,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
-    private Mat processMat(Mat mat)
+    private Mat processForeground()
     {
-        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2HSV);
-        Core.inRange(mat, new Scalar(50, 15, 0), new Scalar(96, 175, 255), mat);
-
-        Imgproc.erode(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
-        Imgproc.dilate(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
-
-        Imgproc.dilate(mat, mat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2)));
-
-        return mat;
+        return mForegroundMask;
     }
 
     private Bitmap processImage(Bitmap bitmap)
@@ -153,6 +146,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public static String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     private CameraBridgeViewBase mOpenCvCameraView;
+    private BackgroundSubtractorMOG mBackgroundSubtractor;
+    private Mat mForegroundMask;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -160,6 +155,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             switch(status) {
                 case LoaderCallbackInterface.SUCCESS:
                 {
+                    mBackgroundSubtractor = new BackgroundSubtractorMOG();
+                    mForegroundMask = new Mat();
                     mOpenCvCameraView.enableView();
                     break;
                 }
@@ -179,7 +176,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public void onCameraViewStopped() {}
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        return inputFrame.rgba();
+        // Update the background subtraction model
+        mBackgroundSubtractor.apply(inputFrame.gray(), mForegroundMask);
+        // Do image processing on the foreground mask
+        return processForeground();
     }
 
     /** End CvCameraViewListener2 */
