@@ -9,6 +9,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -24,7 +26,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
+import org.opencv.video.BackgroundSubtractor;
 import org.opencv.video.BackgroundSubtractorMOG;
+import org.opencv.video.BackgroundSubtractorMOG2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +44,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        mDebugImageView = (ImageView) findViewById(R.id.debug_view);
         if (DEBUG_MODE)
         {
-            mDebugImageView.setVisibility(View.VISIBLE);
+            mDebugImageViews = new ImageView[NUM_DEBUG_VIEWS];
+            createDebugViews(NUM_DEBUG_VIEWS);
         }
 
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
@@ -51,6 +55,20 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
+    }
+
+    private void createDebugViews(int numViews)
+    {
+        LinearLayout layout = (LinearLayout) findViewById(R.id.camera_activity_layout);
+
+        for (int i = 0; i < numViews; i++)
+        {
+            ImageView imageView = new ImageView(this);
+            imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT, 1));
+            layout.addView(imageView);
+            mDebugImageViews[i] = imageView;
+        }
     }
 
     @Override
@@ -107,6 +125,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private void debugShowMat(Mat mat)
     {
+        debugShowMat(mat, 0);
+    }
+
+    private void debugShowMat(Mat mat, final int viewIndex)
+    {
         if (DEBUG_MODE)
         {
             int width = mat.cols();
@@ -133,7 +156,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             {
                 public void run()
                 {
-                    mDebugImageView.setImageBitmap(mDebugBitmap);
+                    mDebugImageViews[viewIndex].setImageBitmap(mDebugBitmap);
                 }
             });
         }
@@ -143,8 +166,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     {
         // Update the background subtraction model
         mBackgroundSubtractor.apply(frameGray, mForegroundMask);
+        mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
 
-        debugShowMat(mForegroundMask);
+        reduceNoise();
+
+        debugShowMat(mForegroundMask, 0);
+        debugShowMat(mForegroundMask2, 1);
 
         findContours();
         if (DEBUG_MODE)
@@ -164,6 +191,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return frameRgba;
     }
 
+    private void reduceNoise()
+    {
+        Imgproc.blur(mForegroundMask, mForegroundMask, new Size(4, 4));
+    }
+
     private void findContours()
     {
         mContours.clear();
@@ -181,12 +213,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
             mCentroids.add(centroid);
         }
-    }
-
-    private Mat processForeground()
-    {
-
-        return mForegroundMask;
     }
 
     private Bitmap processImage(Bitmap bitmap)
@@ -238,12 +264,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     public static final boolean DEBUG_MODE = true;
+    public static final int NUM_DEBUG_VIEWS = 2;
 
-    private ImageView mDebugImageView;
+    private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
     private CameraBridgeViewBase mOpenCvCameraView;
     private BackgroundSubtractorMOG mBackgroundSubtractor;
+    private BackgroundSubtractorMOG2 mBackgroundSubtractor2;
     private Mat mForegroundMask;
+    private Mat mForegroundMask2;
     private List<Point> mCentroids;
     private List<MatOfPoint> mContours;
 
@@ -254,7 +283,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 case LoaderCallbackInterface.SUCCESS:
                 {
                     mBackgroundSubtractor = new BackgroundSubtractorMOG();
+                    mBackgroundSubtractor2 = new BackgroundSubtractorMOG2();
                     mForegroundMask = new Mat();
+                    mForegroundMask2 = new Mat();
                     mOpenCvCameraView.enableView();
                     break;
                 }
