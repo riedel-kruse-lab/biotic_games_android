@@ -15,8 +15,6 @@ public class CameraView extends JavaCameraView
     public CameraView(Context context, AttributeSet attrs)
     {
         super(context, attrs);
-        //Camera.Parameters params = mCamera.getParameters();
-        //params.setZoom(params.getMaxZoom());
     }
 
     @Override
@@ -25,7 +23,7 @@ public class CameraView extends JavaCameraView
         boolean retValue = super.connectCamera(width, height);
 
         Camera.Parameters params = mCamera.getParameters();
-        params.setZoom(params.getMaxZoom());
+        params.setZoom(params.getMaxZoom() / 2);
         mCamera.setParameters(params);
 
         return retValue;
