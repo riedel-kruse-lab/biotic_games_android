@@ -129,8 +129,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
             Utils.matToBitmap(mat, mDebugBitmap);
 
-            Handler mainHandler = new Handler(getMainLooper());
-            mainHandler.post(new Runnable()
+            runOnUiThread(new Runnable()
             {
                 public void run()
                 {
