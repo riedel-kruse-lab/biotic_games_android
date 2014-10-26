@@ -32,6 +32,7 @@ import org.opencv.video.BackgroundSubtractorMOG2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2
 {
@@ -55,6 +56,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
+
+        mRandom = new Random();
     }
 
     private void createDebugViews(int numViews)
@@ -162,21 +165,48 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
+    private void drawROI(Mat img)
+    {
+        Core.rectangle(img, mROITopLeft, mROIBottomRight, new Scalar(0, 0, 255));
+    }
+
     private Mat processFrame(Mat frameGray, Mat frameRgba)
     {
         // Update the background subtraction model
-        mBackgroundSubtractor.apply(frameGray, mForegroundMask);
-        mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
+        //mBackgroundSubtractor.apply(frameGray, mForegroundMask);
+        //mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
 
-        reduceNoise();
+        // TODO: Limit to ROI if there is one. If there isn't one, don't.
 
-        debugShowMat(mForegroundMask, 0);
-        debugShowMat(mForegroundMask2, 1);
+        Imgproc.cvtColor(frameRgba, mForegroundMask, Imgproc.COLOR_BGR2HSV);
 
-        findContours();
+        Mat roi = null;
+
+        // If an ROI is defined, use that ROI.
+        if (mROITopLeft != null && mROIBottomRight != null)
+        {
+            roi = mForegroundMask.submat((int)mROITopLeft.y, (int)mROIBottomRight.y,
+                    (int)mROITopLeft.x, (int)mROIBottomRight.x);
+        }
+        // Otherwise the ROI is the entire matrix.
+        else
+        {
+            roi = mForegroundMask;
+            mROITopLeft = new Point(0, 0);
+            mROIBottomRight = new Point(mForegroundMask.width(), mForegroundMask.height());
+        }
+
+        Core.inRange(roi, new Scalar(50, 15, 0), new Scalar(96, 175, 255),
+                roi);
+
+        reduceNoise(roi);
+
+        debugShowMat(roi);
+
+        findContours(roi);
         if (DEBUG_MODE)
         {
-            Imgproc.drawContours(frameRgba, mContours, -1, new Scalar(255, 0, 0), 1);
+            Imgproc.drawContours(roi, mContours, -1, new Scalar(255, 0, 0), 1);
         }
 
         findContourCentroids();
@@ -184,23 +214,83 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         {
             for (Point centroid : mCentroids)
             {
-                Core.circle(frameRgba, centroid, 4, new Scalar(0, 255, 0));
+                Core.circle(frameRgba, new Point(centroid.x + mROITopLeft.x, centroid.y + mROITopLeft.y), 4, new Scalar(0, 255, 0));
             }
         }
+
+        // If no centroids were found, just return the image since we can't do any point tracking.
+        if (mCentroids.size() == 0)
+        {
+            return frameRgba;
+        }
+
+        // If we aren't yet tracking a centroid, pick one of the ones that was located at random.
+        if (mTrackedCentroid == null)
+        {
+            mTrackedCentroid = mCentroids.get(mRandom.nextInt(mCentroids.size()));
+            updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+        }
+        // If we are already tracking a centroid, find the centroid in the current image that is
+        // closest to the one that we are tracking.
+        else
+        {
+            double minDistance = Double.MAX_VALUE;
+            Point closestCentroid = null;
+            for (Point centroid : mCentroids)
+            {
+                // Translate all of the centroid points to be in image coordinates instead of ROI
+                // coordinates.
+                centroid.x = centroid.x + mROITopLeft.x;
+                centroid.y = centroid.y + mROITopLeft.y;
+                double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
+                        Math.pow(centroid.y - mTrackedCentroid.y, 2));
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestCentroid = centroid;
+                }
+            }
+
+            mTrackedCentroid = closestCentroid;
+            updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+        }
+
+        Core.circle(frameRgba, mTrackedCentroid, 4, new Scalar(0, 0, 255));
+
+        drawROI(frameRgba);
+
+        //  TRACKING A SINGLE ENTITY:
+        //  Pick a centroid to track at random
+        //  Reduce region of interest to a box around the centroid
+        //  On each frame:
+        //      Find the centroids in the region of interest
+        //      Figure out which centroid is closest to the current centroid
+        //      Replace the current centroid with the closest centroid found.
+        //      Update the region of interest for the new centroid
 
         return frameRgba;
     }
 
-    private void reduceNoise()
+    private void reduceNoise(Mat mat)
     {
-        Imgproc.blur(mForegroundMask, mForegroundMask, new Size(4, 4));
+        Size size = new Size(5, 5);
+        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
+
+        Imgproc.dilate(mat, mat, structuringElement);
+        Imgproc.erode(mat, mat, structuringElement);
+
+        Imgproc.erode(mat, mat, structuringElement);
+        Imgproc.dilate(mat, mat, structuringElement);
+
+        //Imgproc.blur(mForegroundMask, mForegroundMask, new Size(4, 4));
     }
 
-    private void findContours()
+    private void findContours(Mat img)
     {
         mContours.clear();
         Mat hierarchy = new Mat();
-        Imgproc.findContours(mForegroundMask, mContours, hierarchy, Imgproc.RETR_TREE,
+        Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
                 Imgproc.CHAIN_APPROX_SIMPLE);
     }
 
@@ -215,56 +305,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
-    private Bitmap processImage(Bitmap bitmap)
+    private void updateROI(Point centroid, int maxWidth, int maxHeight)
     {
-        Mat originalMat = new Mat();
-
-        Utils.bitmapToMat(bitmap, originalMat);
-
-        Point p1 = new Point(200, 200);
-        Point p2 = new Point(500, 500);
-        Rect roi = new Rect(p1, p2);
-        Mat roiMat = new Mat(originalMat, roi);
-
-        Mat hsvMat = new Mat();
-        Imgproc.cvtColor(roiMat, hsvMat, Imgproc.COLOR_BGR2HSV);
-
-        Mat hsvThresholdedMat = new Mat();
-        Core.inRange(hsvMat, new Scalar(50, 15, 0), new Scalar(96, 175, 255), hsvThresholdedMat);
-
-        Imgproc.erode(hsvThresholdedMat, hsvThresholdedMat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
-        Imgproc.dilate(hsvThresholdedMat, hsvThresholdedMat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3)));
-
-        Imgproc.dilate(hsvThresholdedMat, hsvThresholdedMat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2)));
-        //Imgproc.erode(hsvThresholdedMat, hsvThresholdedMat, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2)));
-
-        Bitmap hsvThresholdedBitmap = Bitmap.createBitmap(
-                hsvThresholdedMat.cols(), hsvThresholdedMat.rows(),
-                Bitmap.Config.ARGB_8888);
-
-        Utils.matToBitmap(hsvThresholdedMat, hsvThresholdedBitmap);
-
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-
-        Imgproc.findContours(hsvThresholdedMat, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        Imgproc.drawContours(roiMat, contours, -1, new Scalar(255, 0, 0), 1);
-
-        roiMat.copyTo(originalMat.submat(roi));
-
-        Core.circle(originalMat, new Point(100, 100), 99, new Scalar(255, 0, 0), -1);
-        Core.rectangle(originalMat, p1, p2, new Scalar(0, 255, 0));
-
-        Bitmap contoursBitmap = Bitmap.createBitmap(
-                originalMat.cols(), originalMat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(originalMat, contoursBitmap);
-
-        return contoursBitmap;
+        // TODO: Make sure that these points don't go off the edge of the image.
+        mROITopLeft = new Point(Math.max(centroid.x - ROI_WIDTH / 2, 0), Math.max(centroid.y - ROI_HEIGHT / 2, 0));
+        mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     public static final boolean DEBUG_MODE = true;
-    public static final int NUM_DEBUG_VIEWS = 2;
+    public static final int NUM_DEBUG_VIEWS = 1;
+    public static final int ROI_WIDTH = 100;
+    public static final int ROI_HEIGHT = ROI_WIDTH;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -274,7 +326,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Mat mForegroundMask;
     private Mat mForegroundMask2;
     private List<Point> mCentroids;
+    private Point mTrackedCentroid;
     private List<MatOfPoint> mContours;
+    private Random mRandom;
+    private Point mROITopLeft;
+    private Point mROIBottomRight;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
