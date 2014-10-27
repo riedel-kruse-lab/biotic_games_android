@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -170,11 +171,65 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Core.rectangle(img, mROITopLeft, mROIBottomRight, new Scalar(0, 0, 255));
     }
 
+    private void drawGoals(Mat img)
+    {
+        int height = img.rows();
+        float margin = (height - GOAL_HEIGHT) / 2;
+
+        if (mGoal1TopLeft == null)
+        {
+            mGoal1TopLeft = new Point(0, margin);
+        }
+
+        if (mGoal1BottomRight == null)
+        {
+            mGoal1BottomRight = new Point(GOAL_WIDTH, GOAL_HEIGHT + margin);
+        }
+
+        if (mGoal2TopLeft == null)
+        {
+            mGoal2TopLeft = new Point(img.cols() - GOAL_WIDTH, margin);
+        }
+
+        if (mGoal2BottomRight == null)
+        {
+            mGoal2BottomRight = new Point(img.cols(), GOAL_HEIGHT + margin);
+        }
+
+        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(0, 0, 255), -1);
+    }
+
+    private void checkGoalReached(Mat img)
+    {
+        if (mGoal1Rect == null)
+        {
+            mGoal1Rect = new Rect(mGoal1TopLeft, mGoal1BottomRight);
+        }
+
+        if (mGoal2Rect == null)
+        {
+            mGoal2Rect = new Rect(mGoal2TopLeft, mGoal2BottomRight);
+        }
+
+        if (mTrackedCentroid.inside(mGoal1Rect) || mTrackedCentroid.inside(mGoal2Rect))
+        {
+            Toast.makeText(getApplicationContext(), "Goal!", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private Mat processFrame(Mat frameGray, Mat frameRgba)
     {
         // Update the background subtraction model
         //mBackgroundSubtractor.apply(frameGray, mForegroundMask);
         //mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
+
+        drawGoals(frameRgba);
+
+        if (mTrackedCentroid != null)
+        {
+            checkGoalReached(frameRgba);
+        }
 
         // TODO: Limit to ROI if there is one. If there isn't one, don't.
 
@@ -317,6 +372,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int ROI_WIDTH = 100;
     public static final int ROI_HEIGHT = ROI_WIDTH;
+    public static final int GOAL_HEIGHT = 400;
+    public static final int GOAL_WIDTH = 50;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -331,6 +388,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Random mRandom;
     private Point mROITopLeft;
     private Point mROIBottomRight;
+
+    private Point mGoal1TopLeft;
+    private Point mGoal1BottomRight;
+
+    private Point mGoal2TopLeft;
+    private Point mGoal2BottomRight;
+
+    private Rect mGoal1Rect;
+    private Rect mGoal2Rect;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
