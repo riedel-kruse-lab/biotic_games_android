@@ -168,7 +168,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private void drawROI(Mat img)
     {
-        Core.rectangle(img, mROITopLeft, mROIBottomRight, new Scalar(0, 0, 255));
+        Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(0, 0, 255));
     }
 
     private void drawGoals(Mat img)
@@ -176,6 +176,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         int height = img.rows();
         float margin = (height - GOAL_HEIGHT) / 2;
 
+
+        //draw GOAL 1
         if (mGoal1TopLeft == null)
         {
             mGoal1TopLeft = new Point(0, margin);
@@ -186,6 +188,28 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal1BottomRight = new Point(GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
+        if (mGoal1LArmTopLeft == null)
+        {
+            mGoal1LArmTopLeft = new Point(GOAL_WIDTH, margin);
+        }
+
+        if(mGoal1LArmBottomRight == null)
+        {
+            mGoal1LArmBottomRight = new Point(GOAL_WIDTH + GOAL_EMPTY_WIDTH, GOAL_WIDTH + margin);
+        }
+
+        if(mGoal1RArmTopLeft == null)
+        {
+            mGoal1RArmTopLeft = new Point(GOAL_WIDTH,GOAL_HEIGHT - GOAL_WIDTH + margin);
+        }
+
+        if(mGoal1RArmBottomRight==null)
+        {
+            mGoal1RArmBottomRight = new Point(GOAL_WIDTH+GOAL_EMPTY_WIDTH, GOAL_HEIGHT + margin);
+        }
+
+
+        //draw GOAL 2
         if (mGoal2TopLeft == null)
         {
             mGoal2TopLeft = new Point(img.cols() - GOAL_WIDTH, margin);
@@ -196,25 +220,76 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal2BottomRight = new Point(img.cols(), GOAL_HEIGHT + margin);
         }
 
+        if (mGoal2LArmTopLeft == null)
+        {
+            mGoal2LArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH, margin);
+        }
+
+        if(mGoal2LArmBottomRight == null)
+        {
+            mGoal2LArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_WIDTH + margin);
+        }
+
+        if(mGoal2RArmTopLeft == null)
+        {
+            mGoal2RArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH,GOAL_HEIGHT - GOAL_WIDTH + margin);
+        }
+
+        if(mGoal2RArmBottomRight==null)
+        {
+            mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_HEIGHT + margin);
+        }
+
         Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(0,0,255),-1);
+        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(0,0,255),-1);
+
+        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255,0,0),-1);
+        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255,0,0),-1);
     }
 
     private void checkGoalReached(Mat img)
     {
         if (mGoal1Rect == null)
         {
-            mGoal1Rect = new Rect(mGoal1TopLeft, mGoal1BottomRight);
+            mGoal1Rect = new Rect(mGoal1TopLeft, mGoal1RArmBottomRight);
         }
 
         if (mGoal2Rect == null)
         {
-            mGoal2Rect = new Rect(mGoal2TopLeft, mGoal2BottomRight);
+            mGoal2Rect = new Rect(mGoal2TopLeft, mGoal2RArmBottomRight);
         }
 
-        if (mTrackedCentroid.inside(mGoal1Rect) || mTrackedCentroid.inside(mGoal2Rect))
+        if (mTrackedCentroid.inside(mGoal1Rect))
         {
-            Toast.makeText(getApplicationContext(), "Goal!", Toast.LENGTH_LONG).show();
+
+            //Reset ball randomly
+            resetBall(img);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Blue Player Goal!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+
+        }
+
+        if (mTrackedCentroid.inside(mGoal2Rect))
+        {
+
+            //Reset ball randomly
+            resetBall(img);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Red Player Goal!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
         }
     }
 
@@ -367,13 +442,21 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
     }
 
+    private void resetBall(Mat img)
+    {
+        mTrackedCentroid = new Point (img.cols()/2, img.rows()/2);
+        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+    }
+
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     public static final boolean DEBUG_MODE = true;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int ROI_WIDTH = 100;
     public static final int ROI_HEIGHT = ROI_WIDTH;
     public static final int GOAL_HEIGHT = 400;
-    public static final int GOAL_WIDTH = 50;
+    public static final int GOAL_WIDTH = 10;
+    public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
+    public static final int ROI_RADIUS= 50; //Radius of the circle drawn around the ROI (region of interest)
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -391,9 +474,17 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
+    private Point mGoal1LArmTopLeft;
+    private Point mGoal1LArmBottomRight;
+    private Point mGoal1RArmTopLeft;
+    private Point mGoal1RArmBottomRight;
 
     private Point mGoal2TopLeft;
     private Point mGoal2BottomRight;
+    private Point mGoal2LArmTopLeft;
+    private Point mGoal2LArmBottomRight;
+    private Point mGoal2RArmTopLeft;
+    private Point mGoal2RArmBottomRight;
 
     private Rect mGoal1Rect;
     private Rect mGoal2Rect;
@@ -432,3 +523,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     /** End CvCameraViewListener2 */
 }
+
+/* to turn off autofocus:
+http://answers.opencv.org/question/21377/how-turn-off-autofocus-with-camerabridgeviewbase/
+ */
