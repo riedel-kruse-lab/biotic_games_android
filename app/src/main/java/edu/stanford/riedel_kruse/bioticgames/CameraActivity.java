@@ -258,7 +258,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         if (mGoal2Rect == null)
         {
-            mGoal2Rect = new Rect(mGoal2TopLeft, mGoal2RArmBottomRight);
+            mGoal2Rect = new Rect(mGoal2LArmTopLeft, mGoal2BottomRight);
         }
 
         if (mTrackedCentroid.inside(mGoal1Rect))
