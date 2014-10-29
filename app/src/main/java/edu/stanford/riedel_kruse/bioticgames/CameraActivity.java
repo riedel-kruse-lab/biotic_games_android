@@ -383,6 +383,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 }
             }
 
+            drawBall(mTrackedCentroid, closestCentroid, frameRgba);
+
             mTrackedCentroid = closestCentroid;
             updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
         }
@@ -443,6 +445,27 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
     }
 
+    private void drawBall(Point previousCenter, Point newCenter, Mat img)
+    {
+        // Vector for the direction
+        Point directionVector = new Point(newCenter.x - previousCenter.x,
+                newCenter.y - previousCenter.y);
+
+        double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
+                Math.pow(directionVector.y, 2));
+
+        // Normalize the direction vector to get a unit vector in that direction, then multiply by
+        // the distance that we want, which is the radius of the ROI because the newCenter should be
+        // the center of the ROI.
+        directionVector.x = directionVector.x / magnitude * ROI_RADIUS;
+        directionVector.y = directionVector.y / magnitude * ROI_RADIUS;
+
+        Point ballLocation = new Point(newCenter.x + directionVector.x,
+                newCenter.y + directionVector.y);
+
+        Core.circle(img, ballLocation, BALL_RADIUS, new Scalar(255, 0, 0));
+    }
+
     private void resetBall(Mat img)
     {
         mTrackedCentroid = new Point (img.cols()/2, img.rows()/2);
@@ -467,6 +490,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
+    public static final int BALL_RADIUS = 15;
     public static final boolean DEBUG_MODE = true;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int ROI_WIDTH = 100;
