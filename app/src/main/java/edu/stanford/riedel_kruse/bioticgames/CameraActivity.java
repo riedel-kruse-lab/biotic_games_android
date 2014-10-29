@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -446,6 +447,23 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     {
         mTrackedCentroid = new Point (img.cols()/2, img.rows()/2);
         updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event)
+    {
+        // When the user touches down on the screen.
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
+        {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Tap!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        return super.onTouchEvent(event);
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
