@@ -327,7 +327,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mROIBottomRight = new Point(mForegroundMask.width(), mForegroundMask.height());
         }
 
-        Core.inRange(roi, new Scalar(50, 15, 0), new Scalar(96, 175, 255),
+        Core.inRange(roi, new Scalar(50, 50, 0), new Scalar(96, 200, 255),
                 roi);
 
         reduceNoise(roi);
