@@ -360,6 +360,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         {
             mTrackedCentroid = mCentroids.get(mRandom.nextInt(mCentroids.size()));
             updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+
+
         }
         // If we are already tracking a centroid, find the centroid in the current image that is
         // closest to the one that we are tracking.
@@ -387,11 +389,44 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
             mTrackedCentroid = closestCentroid;
             updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+
+            outOfBounds(frameRgba);
+
+            if(Tapped)
+            {
+                //"throw" the ball
+                if(mTrackedCentroid != null) {
+                    if (mTrackedCentroid.x + THROW_DISTANCE * directionVector.x < 0 + GOAL_WIDTH ||
+                            mTrackedCentroid.y + THROW_DISTANCE * directionVector.y < 0 + GOAL_WIDTH ||
+                            mTrackedCentroid.x + THROW_DISTANCE * directionVector.x > frameRgba.cols() - GOAL_WIDTH ||
+                            mTrackedCentroid.y + THROW_DISTANCE * directionVector.y > frameRgba.rows() - GOAL_WIDTH) {
+                        //do nothing
+                    }
+                    else
+                    {
+                        mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE * directionVector.x,
+                        mTrackedCentroid.y + THROW_DISTANCE * directionVector.y);
+
+                        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+                    }
+
+
+                    //send the ball to the tapped location
+                    /*mTrackedCentroid = new Point(tapX, tapY);
+                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());*/
+                }
+
+                Tapped = false;
+            }
         }
 
         Core.circle(frameRgba, mTrackedCentroid, 4, new Scalar(0, 0, 255));
 
         drawROI(frameRgba);
+
+
+
+
 
         //  TRACKING A SINGLE ENTITY:
         //  Pick a centroid to track at random
@@ -448,7 +483,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private void drawBall(Point previousCenter, Point newCenter, Mat img)
     {
         // Vector for the direction
-        Point directionVector = new Point(newCenter.x - previousCenter.x,
+        directionVector = new Point(newCenter.x - previousCenter.x,
                 newCenter.y - previousCenter.y);
 
         double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
@@ -472,6 +507,23 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
     }
 
+    private void outOfBounds(Mat img)
+    {
+        if(mTrackedCentroid.x <= GOAL_WIDTH || mTrackedCentroid.y <= GOAL_WIDTH
+                || mTrackedCentroid.x >= img.cols()-GOAL_WIDTH || mTrackedCentroid.y >= img.rows()-GOAL_WIDTH)
+        {
+            resetBall(img);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
@@ -486,6 +538,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             });
         }
 
+        Tapped = true;
+        tapX = event.getX();
+        tapY = event.getY();
+
         return super.onTouchEvent(event);
     }
 
@@ -499,6 +555,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int ROI_RADIUS= 50; //Radius of the circle drawn around the ROI (region of interest)
+    public static final int THROW_DISTANCE = 3;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -528,8 +585,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Point mGoal2RArmTopLeft;
     private Point mGoal2RArmBottomRight;
 
+    private Point directionVector;
+
     private Rect mGoal1Rect;
     private Rect mGoal2Rect;
+
+    public Boolean Tapped = false;
+    public float tapX = 0;
+    public float tapY = 0;
+
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
