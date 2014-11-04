@@ -12,6 +12,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -272,10 +273,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 @Override
                 public void run() {
                     Toast.makeText(getApplicationContext(), "Blue Player Goal!", Toast.LENGTH_SHORT).show();
+                    TextView textView = (TextView) findViewById(R.id.bPoints);
+                    textView.setText("Blue Player: \n" + bluePlayerPoints);
                 }
             });
 
-
+            bluePlayerPoints++;
         }
 
         if (mTrackedCentroid.inside(mGoal2Rect))
@@ -288,9 +291,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 @Override
                 public void run() {
                     Toast.makeText(getApplicationContext(), "Red Player Goal!", Toast.LENGTH_SHORT).show();
+                    TextView textView = (TextView) findViewById(R.id.rPoints);
+                    textView.setText("Red Player: \n" + redPlayerPoints);
                 }
             });
 
+            redPlayerPoints++;
         }
     }
 
@@ -361,6 +367,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         // closest to the one that we are tracking.
         else
         {
+            if(resetGame)
+            {
+                resetBall(frameRgba);
+            }
             // If no centroids were found, just return the image since we can't do any point tracking.
             if (mCentroids.size() == 0)
             {
@@ -567,6 +577,26 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return super.onTouchEvent(event);
     }
 
+    public void resetScore(View v)
+    {
+        redPlayerPoints = 0;
+        bluePlayerPoints = 0;
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), "New Game!", Toast.LENGTH_SHORT).show();
+                TextView textView = (TextView) findViewById(R.id.bPoints);
+                textView.setText("Blue Player: \n" + bluePlayerPoints);
+                TextView textView2 = (TextView) findViewById(R.id.rPoints);
+                textView2.setText("Red Player: \n" + redPlayerPoints);
+            }
+        });
+
+        resetGame = true;
+    }
+
+
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     public static final int BALL_RADIUS = 15;
     public static final boolean DEBUG_MODE = true;
@@ -618,6 +648,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public Boolean Tapped = false;
     public float tapX = 0;
     public float tapY = 0;
+
+    private int bluePlayerPoints = 0;
+    private int redPlayerPoints = 0;
+    private boolean resetGame = false;
 
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {

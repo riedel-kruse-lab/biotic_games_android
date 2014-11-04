@@ -15,6 +15,39 @@
         opencv:camera_id="any"
         android:layout_weight="1" />
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="95dp"
+        android:layout_gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Blue Player: \n 0"
+            android:id="@+id/bPoints"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:editable="false" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Red Player: \n 0"
+            android:id="@+id/rPoints"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Game"
+            android:id="@+id/newGame"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:clickable="true"
+            android:onClick="resetScore" />
+    </RelativeLayout>
+
     <ImageView
         android:id="@+id/debug_view"
         android:layout_width="fill_parent"
