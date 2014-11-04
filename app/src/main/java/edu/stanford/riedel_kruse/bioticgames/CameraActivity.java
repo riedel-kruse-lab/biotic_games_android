@@ -349,74 +349,77 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             }
         }
 
-        // If no centroids were found, just return the image since we can't do any point tracking.
-        if (mCentroids.size() == 0)
-        {
-            return frameRgba;
-        }
 
-        // If we aren't yet tracking a centroid, pick one of the ones that was located at random.
+
+        // If we aren't yet tracking a centroid, place in center.
         if (mTrackedCentroid == null)
         {
-            mTrackedCentroid = mCentroids.get(mRandom.nextInt(mCentroids.size()));
-            updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
-
-
+            resetBall(frameRgba);
         }
+
         // If we are already tracking a centroid, find the centroid in the current image that is
         // closest to the one that we are tracking.
         else
         {
-            double minDistance = Double.MAX_VALUE;
-            Point closestCentroid = null;
-            for (Point centroid : mCentroids)
+            // If no centroids were found, just return the image since we can't do any point tracking.
+            if (mCentroids.size() == 0)
             {
-                // Translate all of the centroid points to be in image coordinates instead of ROI
-                // coordinates.
-                centroid.x = centroid.x + mROITopLeft.x;
-                centroid.y = centroid.y + mROITopLeft.y;
-                double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
-                        Math.pow(centroid.y - mTrackedCentroid.y, 2));
-
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    closestCentroid = centroid;
-                }
+                drawROI(frameRgba);
+                Tapped = false;
             }
+            else {
+                double minDistance = Double.MAX_VALUE;
+                Point closestCentroid = null;
+                for (Point centroid : mCentroids) {
+                    // Translate all of the centroid points to be in image coordinates instead of ROI
+                    // coordinates.
+                    centroid.x = centroid.x + mROITopLeft.x;
+                    centroid.y = centroid.y + mROITopLeft.y;
+                    double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
+                            Math.pow(centroid.y - mTrackedCentroid.y, 2));
 
-            drawBall(mTrackedCentroid, closestCentroid, frameRgba);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCentroid = centroid;
+                    }
+                }
 
-            mTrackedCentroid = closestCentroid;
-            updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+                drawBall(mTrackedCentroid, closestCentroid, frameRgba);
 
-            outOfBounds(frameRgba);
+                mTrackedCentroid = closestCentroid;
+                updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
 
-            if(Tapped)
-            {
-                //"throw" the ball
-                if(mTrackedCentroid != null) {
+                outOfBounds(frameRgba);
+
+                if (Tapped) {
+                    Tapped = false;
+                    //"throw" the ball
                     if (mTrackedCentroid.x + THROW_DISTANCE * directionVector.x < 0 + GOAL_WIDTH ||
                             mTrackedCentroid.y + THROW_DISTANCE * directionVector.y < 0 + GOAL_WIDTH ||
                             mTrackedCentroid.x + THROW_DISTANCE * directionVector.x > frameRgba.cols() - GOAL_WIDTH ||
                             mTrackedCentroid.y + THROW_DISTANCE * directionVector.y > frameRgba.rows() - GOAL_WIDTH) {
-                        //do nothing
+
+                        resetBall(frameRgba);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        //throwBallAnimation(frameRgba);
+                        throwBallInstant();
+                        //ballToTap();
                     }
-                    else
-                    {
-                        mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE * directionVector.x,
-                        mTrackedCentroid.y + THROW_DISTANCE * directionVector.y);
-
-                        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
-                    }
-
-
-                    //send the ball to the tapped location
-                    /*mTrackedCentroid = new Point(tapX, tapY);
-                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());*/
                 }
-
-                Tapped = false;
+                updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
             }
         }
 
@@ -507,6 +510,36 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
     }
 
+    private void throwBallInstant()
+    {
+        mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE
+                * directionVector.x, mTrackedCentroid.y + THROW_DISTANCE
+                * directionVector.y);
+     }
+
+    private void throwBallAnimation(Mat img)
+    {
+        int frames = 0;
+        double dirY = directionVector.y;
+        double dirX = directionVector.x;
+
+        while (frames < FRAMES_PER_THROW)
+        {
+            mTrackedCentroid = new Point(mTrackedCentroid.x + (THROW_DISTANCE / FRAMES_PER_THROW)
+                    * dirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
+                    * dirY);
+
+            drawROI(img);
+
+            frames++;
+        }
+    }
+
+    private void ballToTap()
+    {
+        mTrackedCentroid = new Point(tapX, tapY);
+    }
+
     private void outOfBounds(Mat img)
     {
         if(mTrackedCentroid.x <= GOAL_WIDTH || mTrackedCentroid.y <= GOAL_WIDTH
@@ -527,17 +560,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
-        // When the user touches down on the screen.
-        if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
-        {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Tap!", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-
         Tapped = true;
         tapX = event.getX();
         tapY = event.getY();
@@ -556,6 +578,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int ROI_RADIUS= 50; //Radius of the circle drawn around the ROI (region of interest)
     public static final int THROW_DISTANCE = 3;
+    public static final int FRAMES_PER_THROW = 10;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -570,6 +593,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Random mRandom;
     private Point mROITopLeft;
     private Point mROIBottomRight;
+
+    //private Point closestCentroid;
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
