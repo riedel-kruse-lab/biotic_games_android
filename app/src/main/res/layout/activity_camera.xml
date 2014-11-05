@@ -46,6 +46,14 @@
             android:layout_centerHorizontal="true"
             android:clickable="true"
             android:onClick="resetScore" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Countdown: 0"
+            android:id="@+id/countDown"
+            android:layout_below="@+id/newGame"
+            android:layout_centerHorizontal="true" />
     </RelativeLayout>
 
     <ImageView

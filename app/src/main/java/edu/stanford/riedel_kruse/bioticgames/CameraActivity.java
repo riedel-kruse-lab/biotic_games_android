@@ -266,7 +266,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         if (mTrackedCentroid.inside(mGoal1Rect))
         {
 
-            //Reset ball randomly
             resetBall(img);
 
             runOnUiThread(new Runnable() {
@@ -284,7 +283,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         if (mTrackedCentroid.inside(mGoal2Rect))
         {
 
-            //Reset ball randomly
             resetBall(img);
 
             runOnUiThread(new Runnable() {
@@ -363,6 +361,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             resetBall(frameRgba);
         }
 
+
         // If we are already tracking a centroid, find the centroid in the current image that is
         // closest to the one that we are tracking.
         else
@@ -370,6 +369,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             if(resetGame)
             {
                 resetBall(frameRgba);
+                resetGame = false;
             }
             // If no centroids were found, just return the image since we can't do any point tracking.
             if (mCentroids.size() == 0)
@@ -377,7 +377,32 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 drawROI(frameRgba);
                 Tapped = false;
             }
-            else {
+
+
+
+            /*if(playerSwapBuffer)
+            {
+                time = System.currentTimeMillis();
+                time2 = System.currentTimeMillis();
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while (timeGap > 0) {
+                            long gap = BUFFER_TIME + time2 - time;
+                            timeGap = ((int) (long) gap)/1000;
+                            time = System.currentTimeMillis();
+                            TextView textView = (TextView) findViewById(R.id.countDown);
+                            textView.setText("Countdown:" + (timeGap + 1));
+                        }
+                    }
+
+                });
+
+                playerSwapBuffer = false;
+            }*/
+            else
+            {
                 double minDistance = Double.MAX_VALUE;
                 Point closestCentroid = null;
                 for (Point centroid : mCentroids) {
@@ -567,6 +592,20 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     }
 
+    private void swapPlayers()
+    {
+        if(blueTurn)
+        {
+            blueTurn = false;
+            redTurn = true;
+        }
+        else
+        {
+            redTurn = false;
+            blueTurn = true;
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
@@ -609,6 +648,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int ROI_RADIUS= 50; //Radius of the circle drawn around the ROI (region of interest)
     public static final int THROW_DISTANCE = 3;
     public static final int FRAMES_PER_THROW = 10;
+    public static final int BUFFER_TIME = 5000;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -652,6 +692,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private int bluePlayerPoints = 0;
     private int redPlayerPoints = 0;
     private boolean resetGame = false;
+    private boolean blueTurn = true;
+    private boolean redTurn = false;
+    private boolean playerSwapBuffer = true;
+    private int timeGap= 0;
+
+    private long time = 0;
+    private long time2 = 0;
 
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
