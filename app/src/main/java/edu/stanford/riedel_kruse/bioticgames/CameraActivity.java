@@ -37,9 +37,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2
-{
-    /** Activity lifecycle callbacks */
+public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+    /**
+     * Activity lifecycle callbacks
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +49,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        if (DEBUG_MODE)
-        {
+        if (DEBUG_MODE) {
             mDebugImageViews = new ImageView[NUM_DEBUG_VIEWS];
             createDebugViews(NUM_DEBUG_VIEWS);
         }
@@ -63,12 +63,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mRandom = new Random();
     }
 
-    private void createDebugViews(int numViews)
-    {
+    private void createDebugViews(int numViews) {
         LinearLayout layout = (LinearLayout) findViewById(R.id.camera_activity_layout);
 
-        for (int i = 0; i < numViews; i++)
-        {
+        for (int i = 0; i < numViews; i++) {
             ImageView imageView = new ImageView(this);
             imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT, 1));
@@ -84,15 +82,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     @Override
-    public void onPause()
-    {
+    public void onPause() {
         super.onPause();
         disableCameraView();
     }
 
     @Override
-    public void onResume()
-    {
+    public void onResume() {
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
     }
@@ -119,152 +115,126 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return super.onOptionsItemSelected(item);
     }
 
-    /** End activity lifecycle callbacks */
+    /**
+     * End activity lifecycle callbacks
+     */
 
-    private void disableCameraView()
-    {
-        if (mOpenCvCameraView != null)
-        {
+    private void disableCameraView() {
+        if (mOpenCvCameraView != null) {
             mOpenCvCameraView.disableView();
         }
     }
 
-    private void debugShowMat(Mat mat)
-    {
+    private void debugShowMat(Mat mat) {
         debugShowMat(mat, 0);
     }
 
-    private void debugShowMat(Mat mat, final int viewIndex)
-    {
-        if (DEBUG_MODE)
-        {
+    private void debugShowMat(Mat mat, final int viewIndex) {
+        if (DEBUG_MODE) {
             int width = mat.cols();
             int height = mat.rows();
-            if (mDebugBitmap == null)
-            {
+            if (mDebugBitmap == null) {
                 mDebugBitmap = Bitmap.createBitmap(width, height,
                         Bitmap.Config.ARGB_8888);
             }
 
-            if (mDebugBitmap.getWidth() != width)
-            {
+            if (mDebugBitmap.getWidth() != width) {
                 mDebugBitmap.setWidth(width);
             }
 
-            if (mDebugBitmap.getHeight() != height)
-            {
+            if (mDebugBitmap.getHeight() != height) {
                 mDebugBitmap.setHeight(height);
             }
 
             Utils.matToBitmap(mat, mDebugBitmap);
 
-            runOnUiThread(new Runnable()
-            {
-                public void run()
-                {
+            runOnUiThread(new Runnable() {
+                public void run() {
                     mDebugImageViews[viewIndex].setImageBitmap(mDebugBitmap);
                 }
             });
         }
     }
 
-    private void drawROI(Mat img)
-    {
+    private void drawROI(Mat img) {
         Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(0, 0, 255));
     }
 
-    private void drawGoals(Mat img)
-    {
+    private void drawGoals(Mat img) {
         int height = img.rows();
         float margin = (height - GOAL_HEIGHT) / 2;
 
 
         //draw GOAL 1
-        if (mGoal1TopLeft == null)
-        {
+        if (mGoal1TopLeft == null) {
             mGoal1TopLeft = new Point(0, margin);
         }
 
-        if (mGoal1BottomRight == null)
-        {
+        if (mGoal1BottomRight == null) {
             mGoal1BottomRight = new Point(GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
-        if (mGoal1LArmTopLeft == null)
-        {
+        if (mGoal1LArmTopLeft == null) {
             mGoal1LArmTopLeft = new Point(GOAL_WIDTH, margin);
         }
 
-        if(mGoal1LArmBottomRight == null)
-        {
+        if (mGoal1LArmBottomRight == null) {
             mGoal1LArmBottomRight = new Point(GOAL_WIDTH + GOAL_EMPTY_WIDTH, GOAL_WIDTH + margin);
         }
 
-        if(mGoal1RArmTopLeft == null)
-        {
-            mGoal1RArmTopLeft = new Point(GOAL_WIDTH,GOAL_HEIGHT - GOAL_WIDTH + margin);
+        if (mGoal1RArmTopLeft == null) {
+            mGoal1RArmTopLeft = new Point(GOAL_WIDTH, GOAL_HEIGHT - GOAL_WIDTH + margin);
         }
 
-        if(mGoal1RArmBottomRight==null)
-        {
-            mGoal1RArmBottomRight = new Point(GOAL_WIDTH+GOAL_EMPTY_WIDTH, GOAL_HEIGHT + margin);
+        if (mGoal1RArmBottomRight == null) {
+            mGoal1RArmBottomRight = new Point(GOAL_WIDTH + GOAL_EMPTY_WIDTH, GOAL_HEIGHT + margin);
         }
 
 
         //draw GOAL 2
-        if (mGoal2TopLeft == null)
-        {
+        if (mGoal2TopLeft == null) {
             mGoal2TopLeft = new Point(img.cols() - GOAL_WIDTH, margin);
         }
 
-        if (mGoal2BottomRight == null)
-        {
+        if (mGoal2BottomRight == null) {
             mGoal2BottomRight = new Point(img.cols(), GOAL_HEIGHT + margin);
         }
 
-        if (mGoal2LArmTopLeft == null)
-        {
+        if (mGoal2LArmTopLeft == null) {
             mGoal2LArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH, margin);
         }
 
-        if(mGoal2LArmBottomRight == null)
-        {
+        if (mGoal2LArmBottomRight == null) {
             mGoal2LArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_WIDTH + margin);
         }
 
-        if(mGoal2RArmTopLeft == null)
-        {
-            mGoal2RArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH,GOAL_HEIGHT - GOAL_WIDTH + margin);
+        if (mGoal2RArmTopLeft == null) {
+            mGoal2RArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH, GOAL_HEIGHT - GOAL_WIDTH + margin);
         }
 
-        if(mGoal2RArmBottomRight==null)
-        {
+        if (mGoal2RArmBottomRight == null) {
             mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
         Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(0,0,255),-1);
-        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(0,0,255),-1);
+        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(0, 0, 255), -1);
 
         Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(255, 0, 0), -1);
-        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255,0,0),-1);
-        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255,0,0),-1);
+        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255, 0, 0), -1);
     }
 
-    private void checkGoalReached(Mat img)
-    {
-        if (mGoal1Rect == null)
-        {
+    private void checkGoalReached(Mat img) {
+        if (mGoal1Rect == null) {
             mGoal1Rect = new Rect(mGoal1TopLeft, mGoal1RArmBottomRight);
         }
 
-        if (mGoal2Rect == null)
-        {
+        if (mGoal2Rect == null) {
             mGoal2Rect = new Rect(mGoal2LArmTopLeft, mGoal2BottomRight);
         }
 
-        if (mTrackedCentroid.inside(mGoal1Rect))
-        {
+        if (mTrackedCentroid.inside(mGoal1Rect)) {
 
             resetBall(img);
 
@@ -280,8 +250,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             bluePlayerPoints++;
         }
 
-        if (mTrackedCentroid.inside(mGoal2Rect))
-        {
+        if (mTrackedCentroid.inside(mGoal2Rect)) {
 
             resetBall(img);
 
@@ -298,16 +267,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
-    private Mat processFrame(Mat frameGray, Mat frameRgba)
-    {
+    private Mat processFrame(Mat frameGray, Mat frameRgba) {
         // Update the background subtraction model
         //mBackgroundSubtractor.apply(frameGray, mForegroundMask);
         //mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
 
         drawGoals(frameRgba);
 
-        if (mTrackedCentroid != null)
-        {
+        if (mTrackedCentroid != null) {
             checkGoalReached(frameRgba);
         }
 
@@ -318,14 +285,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Mat roi = null;
 
         // If an ROI is defined, use that ROI.
-        if (mROITopLeft != null && mROIBottomRight != null)
-        {
-            roi = mForegroundMask.submat((int)mROITopLeft.y, (int)mROIBottomRight.y,
-                    (int)mROITopLeft.x, (int)mROIBottomRight.x);
+        if (mROITopLeft != null && mROIBottomRight != null) {
+            roi = mForegroundMask.submat((int) mROITopLeft.y, (int) mROIBottomRight.y,
+                    (int) mROITopLeft.x, (int) mROIBottomRight.x);
         }
         // Otherwise the ROI is the entire matrix.
-        else
-        {
+        else {
             roi = mForegroundMask;
             mROITopLeft = new Point(0, 0);
             mROIBottomRight = new Point(mForegroundMask.width(), mForegroundMask.height());
@@ -339,44 +304,40 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         debugShowMat(roi);
 
         findContours(roi);
-        if (DEBUG_MODE)
-        {
+        if (DEBUG_MODE) {
             Imgproc.drawContours(roi, mContours, -1, new Scalar(255, 0, 0), 1);
         }
 
         findContourCentroids();
-        if (DEBUG_MODE)
-        {
-            for (Point centroid : mCentroids)
-            {
+        if (DEBUG_MODE) {
+            for (Point centroid : mCentroids) {
                 Core.circle(frameRgba, new Point(centroid.x + mROITopLeft.x, centroid.y + mROITopLeft.y), 4, new Scalar(0, 255, 0));
             }
         }
 
 
-
         // If we aren't yet tracking a centroid, place in center.
-        if (mTrackedCentroid == null)
-        {
+        if (mTrackedCentroid == null) {
             resetBall(frameRgba);
         }
 
 
         // If we are already tracking a centroid, find the centroid in the current image that is
         // closest to the one that we are tracking.
-        else
-        {
-            if(resetGame)
-            {
-                resetBall(frameRgba);
-                resetGame = false;
-            }
-            // If no centroids were found, just return the image since we can't do any point tracking.
-            if (mCentroids.size() == 0)
-            {
-                drawROI(frameRgba);
-                Tapped = false;
-            }
+        else {
+            if (passing) {
+                throwBallAnimation(frameRgba);
+            } else {
+
+                if (resetGame) {
+                    resetBall(frameRgba);
+                    resetGame = false;
+                }
+                // If no centroids were found, just return the image since we can't do any point tracking.
+                if (mCentroids.size() == 0) {
+                    drawROI(frameRgba);
+                    Tapped = false;
+                }
 
 
 
@@ -401,69 +362,70 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
                 playerSwapBuffer = false;
             }*/
-            else
-            {
-                double minDistance = Double.MAX_VALUE;
-                Point closestCentroid = null;
-                for (Point centroid : mCentroids) {
-                    // Translate all of the centroid points to be in image coordinates instead of ROI
-                    // coordinates.
-                    centroid.x = centroid.x + mROITopLeft.x;
-                    centroid.y = centroid.y + mROITopLeft.y;
-                    double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
-                            Math.pow(centroid.y - mTrackedCentroid.y, 2));
+                else {
+                    double minDistance = Double.MAX_VALUE;
+                    Point closestCentroid = null;
+                    for (Point centroid : mCentroids) {
+                        // Translate all of the centroid points to be in image coordinates instead of ROI
+                        // coordinates.
+                        centroid.x = centroid.x + mROITopLeft.x;
+                        centroid.y = centroid.y + mROITopLeft.y;
+                        double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
+                                Math.pow(centroid.y - mTrackedCentroid.y, 2));
 
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestCentroid = centroid;
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestCentroid = centroid;
+                        }
                     }
-                }
 
-                drawBall(mTrackedCentroid, closestCentroid, frameRgba);
+                    drawBall(mTrackedCentroid, closestCentroid, frameRgba);
 
-                mTrackedCentroid = closestCentroid;
-                updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+                    mTrackedCentroid = closestCentroid;
+                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
 
-                outOfBounds(frameRgba);
+                    outOfBounds(frameRgba);
 
-                if (Tapped) {
-                    Tapped = false;
-                    //"throw" the ball
-                    if (mTrackedCentroid.x + THROW_DISTANCE * directionVector.x < 0 + GOAL_WIDTH ||
-                            mTrackedCentroid.y + THROW_DISTANCE * directionVector.y < 0 + GOAL_WIDTH ||
-                            mTrackedCentroid.x + THROW_DISTANCE * directionVector.x > frameRgba.cols() - GOAL_WIDTH ||
-                            mTrackedCentroid.y + THROW_DISTANCE * directionVector.y > frameRgba.rows() - GOAL_WIDTH) {
+                    if (Tapped) {
+                        Tapped = false;
+                        //"throw" the ball
+                        /*if (mTrackedCentroid.x + THROW_DISTANCE * directionVector.x < 0 + GOAL_WIDTH ||
+                                mTrackedCentroid.y + THROW_DISTANCE * directionVector.y < 0 + GOAL_WIDTH ||
+                                mTrackedCentroid.x + THROW_DISTANCE * directionVector.x > frameRgba.cols() - GOAL_WIDTH ||
+                                mTrackedCentroid.y + THROW_DISTANCE * directionVector.y > frameRgba.rows() - GOAL_WIDTH) {
 
-                        resetBall(frameRgba);
+                            resetBall(frameRgba);
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        //throwBallAnimation(frameRgba);
-                        throwBallInstant();
-                        //ballToTap();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } else {*/
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                            passing = true;
+                            dirY = directionVector.y;
+                            dirX = directionVector.x;
+                            throwBallAnimation(frameRgba);
+                            //throwBallInstant();
+                            //ballToTap();
+                        //}
                     }
+                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
                 }
-                updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
             }
         }
 
+        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
         Core.circle(frameRgba, mTrackedCentroid, 4, new Scalar(0, 0, 255));
 
         drawROI(frameRgba);
-
-
-
 
 
         //  TRACKING A SINGLE ENTITY:
@@ -478,8 +440,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return frameRgba;
     }
 
-    private void reduceNoise(Mat mat)
-    {
+    private void reduceNoise(Mat mat) {
         Size size = new Size(5, 5);
         Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
 
@@ -492,34 +453,29 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         //Imgproc.blur(mForegroundMask, mForegroundMask, new Size(4, 4));
     }
 
-    private void findContours(Mat img)
-    {
+    private void findContours(Mat img) {
         mContours.clear();
         Mat hierarchy = new Mat();
         Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
                 Imgproc.CHAIN_APPROX_SIMPLE);
     }
 
-    private void findContourCentroids()
-    {
+    private void findContourCentroids() {
         mCentroids.clear();
-        for (MatOfPoint contour : mContours)
-        {
+        for (MatOfPoint contour : mContours) {
             Moments p = Imgproc.moments(contour, false);
             Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
             mCentroids.add(centroid);
         }
     }
 
-    private void updateROI(Point centroid, int maxWidth, int maxHeight)
-    {
+    private void updateROI(Point centroid, int maxWidth, int maxHeight) {
         // TODO: Make sure that these points don't go off the edge of the image.
         mROITopLeft = new Point(Math.max(centroid.x - ROI_WIDTH / 2, 0), Math.max(centroid.y - ROI_HEIGHT / 2, 0));
         mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
     }
 
-    private void drawBall(Point previousCenter, Point newCenter, Mat img)
-    {
+    private void drawBall(Point previousCenter, Point newCenter, Mat img) {
         // Vector for the direction
         directionVector = new Point(newCenter.x - previousCenter.x,
                 newCenter.y - previousCenter.y);
@@ -539,47 +495,57 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Core.circle(img, ballLocation, BALL_RADIUS, new Scalar(255, 0, 0));
     }
 
-    private void resetBall(Mat img)
-    {
-        mTrackedCentroid = new Point (img.cols()/2, img.rows()/2);
+    private void resetBall(Mat img) {
+        mTrackedCentroid = new Point(img.cols() / 2, img.rows() / 2);
         updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
     }
 
-    private void throwBallInstant()
-    {
+    private void throwBallInstant() {
         mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE
                 * directionVector.x, mTrackedCentroid.y + THROW_DISTANCE
                 * directionVector.y);
-     }
+    }
 
-    private void throwBallAnimation(Mat img)
-    {
-        int frames = 0;
-        double dirY = directionVector.y;
-        double dirX = directionVector.x;
+    private void throwBallAnimation(Mat img) {
 
-        while (frames < FRAMES_PER_THROW)
-        {
+        Tapped = false;
+
+        if (frames < FRAMES_PER_THROW) {
             mTrackedCentroid = new Point(mTrackedCentroid.x + (THROW_DISTANCE / FRAMES_PER_THROW)
                     * dirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
                     * dirY);
 
-            drawROI(img);
-
             frames++;
+        } else {
+            passing = false;
+            frames = 0;
+        }
+
+        if (mTrackedCentroid.x < 0 + GOAL_WIDTH ||
+                mTrackedCentroid.y < 0 + GOAL_WIDTH ||
+                mTrackedCentroid.x  > img.cols() - GOAL_WIDTH ||
+                mTrackedCentroid.y  > img.rows() - GOAL_WIDTH) {
+
+            resetBall(img);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+                }
+            });
+            passing = false;
+            frames = 0;
         }
     }
 
-    private void ballToTap()
-    {
+    private void ballToTap() {
         mTrackedCentroid = new Point(tapX, tapY);
     }
 
-    private void outOfBounds(Mat img)
-    {
-        if(mTrackedCentroid.x <= GOAL_WIDTH || mTrackedCentroid.y <= GOAL_WIDTH
-                || mTrackedCentroid.x >= img.cols()-GOAL_WIDTH || mTrackedCentroid.y >= img.rows()-GOAL_WIDTH)
-        {
+    private void outOfBounds(Mat img) {
+        if (mTrackedCentroid.x <= GOAL_WIDTH || mTrackedCentroid.y <= GOAL_WIDTH
+                || mTrackedCentroid.x >= img.cols() - GOAL_WIDTH || mTrackedCentroid.y >= img.rows() - GOAL_WIDTH) {
             resetBall(img);
 
             runOnUiThread(new Runnable() {
@@ -592,23 +558,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     }
 
-    private void swapPlayers()
-    {
-        if(blueTurn)
-        {
+    private void swapPlayers() {
+        if (blueTurn) {
             blueTurn = false;
             redTurn = true;
-        }
-        else
-        {
+        } else {
             redTurn = false;
             blueTurn = true;
         }
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event)
-    {
+    public boolean onTouchEvent(MotionEvent event) {
         Tapped = true;
         tapX = event.getX();
         tapY = event.getY();
@@ -616,8 +577,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         return super.onTouchEvent(event);
     }
 
-    public void resetScore(View v)
-    {
+    public void resetScore(View v) {
         redPlayerPoints = 0;
         bluePlayerPoints = 0;
 
@@ -645,9 +605,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
-    public static final int ROI_RADIUS= 50; //Radius of the circle drawn around the ROI (region of interest)
-    public static final int THROW_DISTANCE = 3;
-    public static final int FRAMES_PER_THROW = 10;
+    public static final int ROI_RADIUS = 50; //Radius of the circle drawn around the ROI (region of interest)
+    public static final double THROW_DISTANCE = 3;
+    public static final double FRAMES_PER_THROW = 10;
     public static final int BUFFER_TIME = 5000;
 
     private ImageView[] mDebugImageViews;
@@ -689,13 +649,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public float tapX = 0;
     public float tapY = 0;
 
+    private double dirX = 0;
+    private double dirY = 0;
+    private int frames = 0;
+    private boolean passing = false;
+
     private int bluePlayerPoints = 0;
     private int redPlayerPoints = 0;
     private boolean resetGame = false;
     private boolean blueTurn = true;
     private boolean redTurn = false;
     private boolean playerSwapBuffer = true;
-    private int timeGap= 0;
+    private int timeGap = 0;
 
     private long time = 0;
     private long time2 = 0;
@@ -704,9 +669,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
-            switch(status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS: {
                     mBackgroundSubtractor = new BackgroundSubtractorMOG();
                     mBackgroundSubtractor2 = new BackgroundSubtractorMOG2();
                     mForegroundMask = new Mat();
@@ -714,8 +678,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     mOpenCvCameraView.enableView();
                     break;
                 }
-                default:
-                {
+                default: {
                     super.onManagerConnected(status);
                     break;
                 }
@@ -723,11 +686,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     };
 
-    /** CvCameraViewListener2 Interface */
+    /**
+     * CvCameraViewListener2 Interface
+     */
 
-    public void onCameraViewStarted(int width, int height) {}
+    public void onCameraViewStarted(int width, int height) {
+    }
 
-    public void onCameraViewStopped() {}
+    public void onCameraViewStopped() {
+    }
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         return processFrame(inputFrame.gray(), inputFrame.rgba());
