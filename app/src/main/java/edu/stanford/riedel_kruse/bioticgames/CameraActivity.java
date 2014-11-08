@@ -61,6 +61,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mContours = new ArrayList<MatOfPoint>();
 
         mRandom = new Random();
+
+        time = System.currentTimeMillis();
+        time2 = System.currentTimeMillis();
     }
 
     private void createDebugViews(int numViews) {
@@ -157,7 +160,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void drawROI(Mat img) {
-        Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(0, 0, 255));
+        if (blueTurn) {
+            Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(0, 0, 255));
+        } else {
+            Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(255, 0, 0));
+        }
     }
 
     private void drawGoals(Mat img) {
@@ -234,7 +241,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal2Rect = new Rect(mGoal2LArmTopLeft, mGoal2BottomRight);
         }
 
-        if (mTrackedCentroid.inside(mGoal1Rect)) {
+        if (mTrackedCentroid.inside(mGoal1Rect) && blueTurn) {
 
             resetBall(img);
 
@@ -250,7 +257,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             bluePlayerPoints++;
         }
 
-        if (mTrackedCentroid.inside(mGoal2Rect)) {
+        if (mTrackedCentroid.inside(mGoal2Rect) && redTurn) {
 
             resetBall(img);
 
@@ -271,6 +278,33 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         // Update the background subtraction model
         //mBackgroundSubtractor.apply(frameGray, mForegroundMask);
         //mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
+
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                time2 = System.currentTimeMillis();
+                if (playerSwapBuffer) {
+                    countTime = (int) (BUFFER_TIME + time - time2) / 1000;
+                    if (countTime == 0) {
+                        playerSwapBuffer = false;
+                        time = System.currentTimeMillis();
+                        time2 = System.currentTimeMillis();
+                    }
+
+                    TextView countView = (TextView) findViewById(R.id.countDown);
+                    countView.setText("Swap!: " + countTime);
+                } else {
+                    countTime = (int) (TIMER_TURN + time - time2) / 1000;
+                    if (countTime == 0) {
+                        swapPlayers();
+                    }
+                    TextView countView = (TextView) findViewById(R.id.countDown);
+                    countView.setText("Countdown: " + countTime);
+                }
+            }
+        });
+
 
         drawGoals(frameRgba);
 
@@ -327,10 +361,19 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         else {
             if (passing) {
                 throwBallAnimation(frameRgba);
+            } else if (playerSwapBuffer) {
+                //do nothing
+
             } else {
 
                 if (resetGame) {
                     resetBall(frameRgba);
+                    blueTurn = true;
+                    redTurn = true;
+                    playerSwapBuffer = true;
+                    time = System.currentTimeMillis();
+                    time2 = System.currentTimeMillis();
+                    countTime = 0;
                     resetGame = false;
                 }
                 // If no centroids were found, just return the image since we can't do any point tracking.
@@ -403,18 +446,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                                 }
                             });
                         } else {*/
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                            passing = true;
-                            dirY = directionVector.y;
-                            dirX = directionVector.x;
-                            throwBallAnimation(frameRgba);
-                            //throwBallInstant();
-                            //ballToTap();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        passing = true;
+                        dirY = directionVector.y;
+                        dirX = directionVector.x;
+                        throwBallAnimation(frameRgba);
+                        //throwBallInstant();
+                        //ballToTap();
                         //}
                     }
                     updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
@@ -523,8 +566,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         if (mTrackedCentroid.x < 0 + GOAL_WIDTH ||
                 mTrackedCentroid.y < 0 + GOAL_WIDTH ||
-                mTrackedCentroid.x  > img.cols() - GOAL_WIDTH ||
-                mTrackedCentroid.y  > img.rows() - GOAL_WIDTH) {
+                mTrackedCentroid.x > img.cols() - GOAL_WIDTH ||
+                mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
 
             resetBall(img);
 
@@ -544,29 +587,46 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void outOfBounds(Mat img) {
-        if (mTrackedCentroid.x <= GOAL_WIDTH || mTrackedCentroid.y <= GOAL_WIDTH
-                || mTrackedCentroid.x >= img.cols() - GOAL_WIDTH || mTrackedCentroid.y >= img.rows() - GOAL_WIDTH) {
+        if (mTrackedCentroid.x <= BOUNDS_BUFFER || mTrackedCentroid.y <= BOUNDS_BUFFER
+                || mTrackedCentroid.x >= img.cols() - BOUNDS_BUFFER || mTrackedCentroid.y >= img.rows() - BOUNDS_BUFFER) {
             resetBall(img);
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+
+                    swapPlayers();
                 }
             });
+
         }
 
     }
 
     private void swapPlayers() {
+
+        TextView textView = (TextView) findViewById(R.id.playerTurn);
+
         if (blueTurn) {
             blueTurn = false;
             redTurn = true;
+
+            textView.setText("Turn: Red");
         } else {
             redTurn = false;
             blueTurn = true;
+
+            textView.setText("Turn: Blue");
         }
+
+        time = System.currentTimeMillis();
+        time2 = System.currentTimeMillis();
+        countTime = 1;
+
+        playerSwapBuffer = true;
     }
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -608,7 +668,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int ROI_RADIUS = 50; //Radius of the circle drawn around the ROI (region of interest)
     public static final double THROW_DISTANCE = 3;
     public static final double FRAMES_PER_THROW = 10;
-    public static final int BUFFER_TIME = 5000;
+    public static final int BUFFER_TIME = 3999;
+    public static final int TIMER_TURN = 15999;
+    public static final int BOUNDS_BUFFER = 20;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
@@ -664,6 +726,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private long time = 0;
     private long time2 = 0;
+    private int countTime = 0;
 
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
