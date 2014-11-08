@@ -423,8 +423,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
                     mTrackedCentroid = closestCentroid;
                     mTrackedCentroids.add(mTrackedCentroid);
-                    if (mTrackedCentroids.size() > 10)
-                    {
+                    if (mTrackedCentroids.size() > 10) {
                         mTrackedCentroids.remove(0);
                     }
                     drawDirection(frameRgba);
@@ -458,6 +457,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                         passing = true;
                         dirY = mAverageDirectionVector.y;
                         dirX = mAverageDirectionVector.x;
+
+
+                        dirMagnitude = Math.sqrt(dirY * dirY + dirX * dirX);
+                        normDirX = dirX / dirMagnitude;
+                        normDirY = dirY / dirMagnitude;
+
                         throwBallAnimation(frameRgba);
                         //throwBallInstant();
                         //ballToTap();
@@ -522,15 +527,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void drawDirection(Mat img) {
-        if (mTrackedCentroids.size() == 1)
-        {
+        if (mTrackedCentroids.size() == 1) {
             return;
         }
 
         ArrayList<Point> directionVectors = new ArrayList<Point>();
 
-        for (int i = 0; i < mTrackedCentroids.size() - 1; i++)
-        {
+        for (int i = 0; i < mTrackedCentroids.size() - 1; i++) {
             Point previousPoint = mTrackedCentroids.get(i);
             Point nextPoint = mTrackedCentroids.get(i + 1);
             Point directionVector = new Point(nextPoint.x - previousPoint.x,
@@ -549,8 +552,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
 
         mAverageDirectionVector = new Point(0, 0);
-        for (int i = 0; i < directionVectors.size(); i++)
-        {
+        for (int i = 0; i < directionVectors.size(); i++) {
             Point directionVector = directionVectors.get(i);
             mAverageDirectionVector.x += directionVector.x;
             mAverageDirectionVector.y += directionVector.y;
@@ -585,8 +587,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         if (frames < FRAMES_PER_THROW) {
             mTrackedCentroid = new Point(mTrackedCentroid.x + (THROW_DISTANCE / FRAMES_PER_THROW)
-                    * dirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
-                    * dirY);
+                    * normDirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
+                    * normDirY);
 
             frames++;
         } else {
@@ -594,21 +596,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             frames = 0;
         }
 
-        if (mTrackedCentroid.x < 0 + GOAL_WIDTH ||
-                mTrackedCentroid.y < 0 + GOAL_WIDTH ||
-                mTrackedCentroid.x > img.cols() - GOAL_WIDTH ||
-                mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
-
-            resetBall(img);
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
-                }
-            });
-            passing = false;
-            frames = 0;
+        if (mTrackedCentroid.x < 0 + GOAL_WIDTH || mTrackedCentroid.x > img.cols() - GOAL_WIDTH) {
+            normDirX = -1 * normDirX;
+        } else if (mTrackedCentroid.y < 0 + GOAL_WIDTH || mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
+            normDirY = -1 * normDirY;
         }
     }
 
@@ -660,11 +651,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        Tapped = true;
+        //Tapped = true;
         tapX = event.getX();
         tapY = event.getY();
 
         return super.onTouchEvent(event);
+    }
+
+    public void passButtonPressed(View v) {
+        Tapped = true;
     }
 
     public void resetScore(View v) {
@@ -759,6 +754,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private long time2 = 0;
     private int countTime = 0;
 
+
+    private double normDirX;
+    private double normDirY;
+    private double dirMagnitude;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
