@@ -3,7 +3,6 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -29,7 +28,6 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
-import org.opencv.video.BackgroundSubtractor;
 import org.opencv.video.BackgroundSubtractorMOG;
 import org.opencv.video.BackgroundSubtractorMOG2;
 
@@ -59,6 +57,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
+        mTrackedCentroids = new ArrayList<Point>();
 
         mRandom = new Random();
     }
@@ -379,9 +378,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                         }
                     }
 
-                    drawBall(mTrackedCentroid, closestCentroid, frameRgba);
-
                     mTrackedCentroid = closestCentroid;
+                    mTrackedCentroids.add(mTrackedCentroid);
+                    if (mTrackedCentroids.size() > 10)
+                    {
+                        mTrackedCentroids.remove(0);
+                    }
+                    drawDirection(frameRgba);
                     updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
 
                     outOfBounds(frameRgba);
@@ -389,10 +392,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     if (Tapped) {
                         Tapped = false;
                         //"throw" the ball
-                        /*if (mTrackedCentroid.x + THROW_DISTANCE * directionVector.x < 0 + GOAL_WIDTH ||
-                                mTrackedCentroid.y + THROW_DISTANCE * directionVector.y < 0 + GOAL_WIDTH ||
-                                mTrackedCentroid.x + THROW_DISTANCE * directionVector.x > frameRgba.cols() - GOAL_WIDTH ||
-                                mTrackedCentroid.y + THROW_DISTANCE * directionVector.y > frameRgba.rows() - GOAL_WIDTH) {
+                        /*if (mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x < 0 + GOAL_WIDTH ||
+                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y < 0 + GOAL_WIDTH ||
+                                mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x > frameRgba.cols() - GOAL_WIDTH ||
+                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y > frameRgba.rows() - GOAL_WIDTH) {
 
                             resetBall(frameRgba);
 
@@ -410,8 +413,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                                 }
                             });
                             passing = true;
-                            dirY = directionVector.y;
-                            dirX = directionVector.x;
+                            dirY = mAverageDirectionVector.y;
+                            dirX = mAverageDirectionVector.x;
                             throwBallAnimation(frameRgba);
                             //throwBallInstant();
                             //ballToTap();
@@ -475,22 +478,49 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
     }
 
-    private void drawBall(Point previousCenter, Point newCenter, Mat img) {
-        // Vector for the direction
-        directionVector = new Point(newCenter.x - previousCenter.x,
-                newCenter.y - previousCenter.y);
+    private void drawDirection(Mat img) {
+        if (mTrackedCentroids.size() == 1)
+        {
+            return;
+        }
 
-        double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
-                Math.pow(directionVector.y, 2));
+        ArrayList<Point> directionVectors = new ArrayList<Point>();
 
-        // Normalize the direction vector to get a unit vector in that direction, then multiply by
-        // the distance that we want, which is the radius of the ROI because the newCenter should be
-        // the center of the ROI.
-        directionVector.x = directionVector.x / magnitude * ROI_RADIUS;
-        directionVector.y = directionVector.y / magnitude * ROI_RADIUS;
+        for (int i = 0; i < mTrackedCentroids.size() - 1; i++)
+        {
+            Point previousPoint = mTrackedCentroids.get(i);
+            Point nextPoint = mTrackedCentroids.get(i + 1);
+            Point directionVector = new Point(nextPoint.x - previousPoint.x,
+                    nextPoint.y - previousPoint.y);
 
-        Point ballLocation = new Point(newCenter.x + directionVector.x,
-                newCenter.y + directionVector.y);
+            double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
+                    Math.pow(directionVector.y, 2));
+
+            // Normalize the direction vector to get a unit vector in that direction, then multiply
+            // by the distance that we want, which is the radius of the ROI because the newCenter
+            // should be the center of the ROI.
+            directionVector.x = directionVector.x / magnitude;
+            directionVector.y = directionVector.y / magnitude;
+
+            directionVectors.add(directionVector);
+        }
+
+        mAverageDirectionVector = new Point(0, 0);
+        for (int i = 0; i < directionVectors.size(); i++)
+        {
+            Point directionVector = directionVectors.get(i);
+            mAverageDirectionVector.x += directionVector.x;
+            mAverageDirectionVector.y += directionVector.y;
+        }
+
+        mAverageDirectionVector.x /= directionVectors.size();
+        mAverageDirectionVector.y /= directionVectors.size();
+
+        mAverageDirectionVector.x *= ROI_RADIUS;
+        mAverageDirectionVector.y *= ROI_RADIUS;
+
+        Point ballLocation = new Point(mTrackedCentroid.x + mAverageDirectionVector.x,
+                mTrackedCentroid.y + mAverageDirectionVector.y);
 
         Core.circle(img, ballLocation, BALL_RADIUS, new Scalar(255, 0, 0));
     }
@@ -502,8 +532,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private void throwBallInstant() {
         mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE
-                * directionVector.x, mTrackedCentroid.y + THROW_DISTANCE
-                * directionVector.y);
+                * mAverageDirectionVector.x, mTrackedCentroid.y + THROW_DISTANCE
+                * mAverageDirectionVector.y);
     }
 
     private void throwBallAnimation(Mat img) {
@@ -619,6 +649,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Mat mForegroundMask2;
     private List<Point> mCentroids;
     private Point mTrackedCentroid;
+    private List<Point> mTrackedCentroids;
     private List<MatOfPoint> mContours;
     private Random mRandom;
     private Point mROITopLeft;
@@ -640,7 +671,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Point mGoal2RArmTopLeft;
     private Point mGoal2RArmBottomRight;
 
-    private Point directionVector;
+    private Point mAverageDirectionVector;
 
     private Rect mGoal1Rect;
     private Rect mGoal2Rect;
