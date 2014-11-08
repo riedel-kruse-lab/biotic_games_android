@@ -54,6 +54,16 @@
             android:id="@+id/countDown"
             android:layout_below="@+id/newGame"
             android:layout_centerHorizontal="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="Turn: Blue"
+            android:id="@+id/playerTurn"
+            android:layout_below="@+id/newGame"
+            android:layout_alignParentStart="true"
+            android:layout_alignBottom="@+id/countDown" />
     </RelativeLayout>
 
     <ImageView
