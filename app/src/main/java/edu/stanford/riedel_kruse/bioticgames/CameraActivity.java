@@ -348,12 +348,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             }
         }
 
-
         // If we aren't yet tracking a centroid, place in center.
         if (mTrackedCentroid == null) {
             resetBall(frameRgba);
         }
-
 
         // If we are already tracking a centroid, find the centroid in the current image that is
         // closest to the one that we are tracking.
