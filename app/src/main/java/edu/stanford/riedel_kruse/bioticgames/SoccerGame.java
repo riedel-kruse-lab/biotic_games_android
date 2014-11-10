@@ -7,6 +7,7 @@ import org.opencv.core.Rect;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by dchiu on 11/8/14.
@@ -25,6 +26,8 @@ public class SoccerGame
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
     public static final double FRAMES_PER_PASS = 15;
     public static final double PASS_DISTANCE = 200;
+    public static final double POWER_UP_PROBABILITY = 0.001;
+    public static final double POWER_DOWN_PROBABILITY = POWER_UP_PROBABILITY;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
 
@@ -46,6 +49,7 @@ public class SoccerGame
     private boolean mPassing;
     private int mPassingFrames;
     private long mTimeLeftInTurn;
+    private Random mRandom;
 
     private SoccerGameDelegate mDelegate;
 
@@ -61,6 +65,8 @@ public class SoccerGame
 
         mPassingDirection = new Point(0, 0);
         mPreviousBallLocations = new ArrayList<Point>();
+
+        mRandom = new Random();
 
         mRedGoal = new Rect();
         mBlueGoal = new Rect();
@@ -178,6 +184,20 @@ public class SoccerGame
         return mTimeLeftInTurn;
     }
 
+    public void addTimeToTurn(long milliseconds)
+    {
+        mTimeLeftInTurn += milliseconds;
+    }
+
+    public void subtractTimeFromTurn(long milliseconds)
+    {
+        mTimeLeftInTurn -= milliseconds;
+        if (mTimeLeftInTurn <= 0)
+        {
+            changeTurn();
+        }
+    }
+
     public boolean isPassing()
     {
         return mPassing;
@@ -226,6 +246,16 @@ public class SoccerGame
 
         boolean outOfBounds = checkForOutOfBounds();
 
+        if (Math.random() <= POWER_UP_PROBABILITY)
+        {
+            spawnPowerUp();
+        }
+
+        if (Math.random() <= POWER_DOWN_PROBABILITY)
+        {
+            spawnPowerDown();
+        }
+
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
         if (mPassing && outOfBounds)
@@ -264,6 +294,17 @@ public class SoccerGame
         }
     }
 
+    private void spawnPowerUp()
+    {
+        // http://stackoverflow.com/questions/363681/generating-random-integers-in-a-range-with-java
+        int x = randInt(BOUNDS_BUFFER, mFieldWidth - BOUNDS_BUFFER);
+        int y = randInt(BOUNDS_BUFFER, mFieldHeight - BOUNDS_BUFFER);
+
+        ExtraTimePowerUp powerUp = new ExtraTimePowerUp(x, y);
+
+        mAvailableModifiers.add(powerUp);
+    }
+
     private void bounceOffWalls()
     {
         if (mBallLocation.x < BOUNDS_BUFFER || mBallLocation.x > mFieldWidth - BOUNDS_BUFFER)
@@ -274,6 +315,11 @@ public class SoccerGame
         {
             mPassingDirection.y *= -1;
         }
+    }
+
+    private int randInt(int min, int max)
+    {
+        return mRandom.nextInt((max - min) + 1) + min;
     }
 
     /**
