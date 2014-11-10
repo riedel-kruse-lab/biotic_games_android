@@ -14,7 +14,7 @@ import java.util.List;
 public class SoccerGame
 {
     public static final int DEFAULT_BALL_RADIUS = 50;
-    public static final int DEFAULT_GOAL_WIDTH = 10;
+    public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
     /**
      * How close the ball has to be to the edge of the screen to be considered out of bounds.
@@ -74,7 +74,6 @@ public class SoccerGame
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
         mCurrentTurn = Turn.RED;
-        mPassing = false;
 
         // Reset the goal locations, heights, and widths.
         mRedGoal.x = 0;
@@ -176,6 +175,7 @@ public class SoccerGame
     {
         mBallLocation = new Point(mFieldWidth / 2.0, mFieldHeight / 2.0);
         resetPassingDirection();
+        mPassing = false;
     }
 
     private void resetPassingDirection()
@@ -202,14 +202,14 @@ public class SoccerGame
 
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
-        //if (mPassing && outOfBounds)
-        //{
-        //    bounceOffWalls();
-        //}
+        if (mPassing && outOfBounds)
+        {
+            bounceOffWalls();
+        }
         // Otherwise if a goal is scored or if we are not passing and the ball is out of bounds we
         // should reset the ball and change the turn.
-        //else if (checkForGoal() || (!mPassing && outOfBounds))
-        if (checkForGoal() || outOfBounds)
+        else if (checkForGoal() || (!mPassing && outOfBounds))
+        //if (checkForGoal() || outOfBounds)
         {
             resetBall();
             changeTurn();
