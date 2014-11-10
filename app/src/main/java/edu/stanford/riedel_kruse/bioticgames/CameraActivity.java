@@ -586,6 +586,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Tapped = false;
 
         if (frames < FRAMES_PER_THROW) {
+            if (mTrackedCentroid.x < 0 + GOAL_WIDTH || mTrackedCentroid.x > img.cols() - GOAL_WIDTH) {
+                normDirX = -1 * normDirX;
+            }
+            if (mTrackedCentroid.y < 0 + GOAL_WIDTH || mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
+                normDirY = -1 * normDirY;
+            }
+
             mTrackedCentroid = new Point(mTrackedCentroid.x + (THROW_DISTANCE / FRAMES_PER_THROW)
                     * normDirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
                     * normDirY);
@@ -594,12 +601,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         } else {
             passing = false;
             frames = 0;
-        }
-
-        if (mTrackedCentroid.x < 0 + GOAL_WIDTH || mTrackedCentroid.x > img.cols() - GOAL_WIDTH) {
-            normDirX = -1 * normDirX;
-        } else if (mTrackedCentroid.y < 0 + GOAL_WIDTH || mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
-            normDirY = -1 * normDirY;
         }
     }
 
@@ -691,8 +692,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int ROI_RADIUS = 50; //Radius of the circle drawn around the ROI (region of interest)
-    public static final double THROW_DISTANCE = 3;
-    public static final double FRAMES_PER_THROW = 10;
+    public static final double THROW_DISTANCE = 300;
+    public static final double FRAMES_PER_THROW = 15;
     public static final int BUFFER_TIME = 3999;
     public static final int TIMER_TURN = 15999;
     public static final int BOUNDS_BUFFER = 20;
