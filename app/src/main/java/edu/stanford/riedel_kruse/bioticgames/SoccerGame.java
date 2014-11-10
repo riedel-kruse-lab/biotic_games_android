@@ -234,8 +234,13 @@ public class SoccerGame
         }
         // Otherwise if a goal is scored or if we are not passing and the ball is out of bounds we
         // should reset the ball and change the turn.
-        else if (checkForGoal() || (!mPassing && outOfBounds))
-        //if (checkForGoal() || outOfBounds)
+        else if (checkForGoal())
+        {
+            resetBall();
+            //changeTurn();
+            return;
+        }
+        else if (!mPassing && outOfBounds)
         {
             resetBall();
             changeTurn();
