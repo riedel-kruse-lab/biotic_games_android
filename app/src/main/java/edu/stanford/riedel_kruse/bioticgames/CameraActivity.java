@@ -715,12 +715,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public void passButtonPressed(View v) {
         mSoccerGame.passBall();
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     public void updateScoreViews()
