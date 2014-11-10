@@ -15,7 +15,7 @@ public class SoccerGame
 {
     public static final long MILLISECONDS_PER_TURN = 15 * 1000;
     public static final int DEFAULT_BALL_RADIUS = 50;
-    public static final int DEFAULT_GOAL_WIDTH = 10;
+    public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
     /**
      * How close the ball has to be to the edge of the screen to be considered out of bounds.
@@ -23,8 +23,8 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
-    public static final int FRAMES_PER_PASS = 10;
-    public static final double PASS_DISTANCE = 0.5;
+    public static final double FRAMES_PER_PASS = 15;
+    public static final double PASS_DISTANCE = 200;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
 
     public enum Turn
@@ -76,7 +76,6 @@ public class SoccerGame
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
         mCurrentTurn = Turn.RED;
-        mPassing = false;
         mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         // Reset the goal locations, heights, and widths.
@@ -160,7 +159,7 @@ public class SoccerGame
 
     public Point getPassingDirection()
     {
-        return mPassingDirection;
+        return mPassingDirection.clone();
     }
 
     public long getTimeLeftInTurn()
@@ -181,6 +180,7 @@ public class SoccerGame
     {
         mBallLocation = new Point(mFieldWidth / 2.0, mFieldHeight / 2.0);
         resetPassingDirection();
+        mPassing = false;
     }
 
     private void resetPassingDirection()
@@ -207,14 +207,14 @@ public class SoccerGame
 
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
-        //if (mPassing && outOfBounds)
-        //{
-        //    bounceOffWalls();
-        //}
+        if (mPassing && outOfBounds)
+        {
+            bounceOffWalls();
+        }
         // Otherwise if a goal is scored or if we are not passing and the ball is out of bounds we
         // should reset the ball and change the turn.
-        //else if (checkForGoal() || (!mPassing && outOfBounds))
-        if (checkForGoal() || outOfBounds)
+        else if (checkForGoal() || (!mPassing && outOfBounds))
+        //if (checkForGoal() || outOfBounds)
         {
             resetBall();
             changeTurn();
@@ -383,7 +383,7 @@ public class SoccerGame
         mPassingDirection.x = 0;
         mPassingDirection.y = 0;
 
-        int numDirectionVectors = directionVectors.size();
+        double numDirectionVectors = directionVectors.size();
 
         // Sum up all of the direction vectors
         for (Point directionVector : directionVectors)
