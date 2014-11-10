@@ -127,9 +127,6 @@ public class SoccerGame
 
         mPassingFrames++;
 
-        Log.d(TAG, "ballLocation.x " + mBallLocation.x);
-        Log.d(TAG, "ballLocation.y " + mBallLocation.y);
-
         updateBallLocation(newLocation, timeDelta);
     }
 

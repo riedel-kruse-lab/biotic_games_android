@@ -264,13 +264,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
             mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
 
-            //Log.d(TAG, "ballLocation.x " + ballLocation.x);
-            //Log.d(TAG, "ballLocation.y " + ballLocation.y);
-            //Log.d(TAG, "mROI.x " + mROI.x);
-            //Log.d(TAG, "mROI.y " + mROI.y);
-            //Log.d(TAG, "mROI.width " + mROI.width);
-            //Log.d(TAG, "mROI.height " + mROI.height);
-
             Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
 
             // Threshold based on hue and saturation (color detection) to eliminate things that are not
@@ -332,7 +325,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         {
             updateCountdown();
         }
-        
+
         return frameRgba;
     }
 
