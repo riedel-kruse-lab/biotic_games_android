@@ -1,5 +1,7 @@
 package edu.stanford.riedel_kruse.bioticgames;
 
+import android.util.Log;
+
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
@@ -21,7 +23,8 @@ public class SoccerGame
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
     public static final int FRAMES_PER_PASS = 10;
-    public static final int PASS_DISTANCE = 3;
+    public static final double PASS_DISTANCE = 0.5;
+    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
 
     public enum Turn
     {
@@ -34,7 +37,7 @@ public class SoccerGame
     private int mBallRadius;
     private Point mBallLocation;
     private List<Point> mPreviousBallLocations;
-    private Point mMovementDirection;
+    private Point mPassingDirection;
     private int mRedPlayerPoints;
     private int mBluePlayerPoints;
     private Turn mCurrentTurn;
@@ -53,7 +56,7 @@ public class SoccerGame
 
         mDelegate = delegate;
 
-        mMovementDirection = new Point(0, 0);
+        mPassingDirection = new Point(0, 0);
         mPreviousBallLocations = new ArrayList<Point>();
 
         mRedGoal = new Rect();
@@ -104,15 +107,65 @@ public class SoccerGame
             // Just finished passing, so we should clear all data about the movement direction.
             // Otherwise the player will be able to spam the pass button and continuously pass in
             // the same direction.
-            resetMovementDirection();
+            resetPassingDirection();
             return;
         }
 
-        Point newLocation = new Point(mBallLocation.x + (PASS_DISTANCE / FRAMES_PER_PASS) *
-                mMovementDirection.x, mBallLocation.y + (PASS_DISTANCE / FRAMES_PER_PASS) *
-                mMovementDirection.y);
+        Point newLocation = new Point(mBallLocation.x + ((float) PASS_DISTANCE / FRAMES_PER_PASS) *
+                mPassingDirection.x, mBallLocation.y + ((float) PASS_DISTANCE / FRAMES_PER_PASS) *
+                mPassingDirection.y);
+
+        mPassingFrames++;
+
+        Log.d(TAG, "ballLocation.x " + mBallLocation.x);
+        Log.d(TAG, "ballLocation.y " + mBallLocation.y);
 
         updateBallLocation(newLocation);
+    }
+
+    public Point getBallLocation()
+    {
+        return mBallLocation;
+    }
+
+    public int getBallRadius()
+    {
+        return mBallRadius;
+    }
+
+    public int getBluePlayerPoints()
+    {
+        return mBluePlayerPoints;
+    }
+
+    public Turn getCurrentTurn()
+    {
+        return mCurrentTurn;
+    }
+
+    public int getRedPlayerPoints()
+    {
+        return mRedPlayerPoints;
+    }
+
+    public int getFieldWidth()
+    {
+        return mFieldWidth;
+    }
+
+    public int getFieldHeight()
+    {
+        return mFieldHeight;
+    }
+
+    public Point getPassingDirection()
+    {
+        return mPassingDirection;
+    }
+
+    public boolean isPassing()
+    {
+        return mPassing;
     }
 
     /**
@@ -122,14 +175,14 @@ public class SoccerGame
     private void resetBall()
     {
         mBallLocation = new Point(mFieldWidth / 2.0, mFieldHeight / 2.0);
-        resetMovementDirection();
+        resetPassingDirection();
     }
 
-    private void resetMovementDirection()
+    private void resetPassingDirection()
     {
         mPreviousBallLocations.clear();
-        mMovementDirection.x = 0;
-        mMovementDirection.y = 0;
+        mPassingDirection.x = 0;
+        mPassingDirection.y = 0;
     }
 
     /**
@@ -138,19 +191,25 @@ public class SoccerGame
      */
     public void updateBallLocation(Point newLocation)
     {
+        if (newLocation == null)
+        {
+            return;
+        }
+
         mBallLocation = newLocation;
 
         boolean outOfBounds = checkForOutOfBounds();
 
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
-        if (mPassing && outOfBounds)
-        {
-            bounceOffWalls();
-        }
+        //if (mPassing && outOfBounds)
+        //{
+        //    bounceOffWalls();
+        //}
         // Otherwise if a goal is scored or if we are not passing and the ball is out of bounds we
         // should reset the ball and change the turn.
-        else if (checkForGoal() || (!mPassing && outOfBounds))
+        //else if (checkForGoal() || (!mPassing && outOfBounds))
+        if (checkForGoal() || outOfBounds)
         {
             resetBall();
             changeTurn();
@@ -162,7 +221,7 @@ public class SoccerGame
         // is being passed.
         if (!mPassing)
         {
-            updateMovementDirection();
+            updatePassingDirection();
         }
     }
 
@@ -170,11 +229,11 @@ public class SoccerGame
     {
         if (mBallLocation.x < BOUNDS_BUFFER || mBallLocation.x > mFieldWidth - BOUNDS_BUFFER)
         {
-            mMovementDirection.x *= -1;
+            mPassingDirection.x *= -1;
         }
         else if (mBallLocation.y < BOUNDS_BUFFER || mBallLocation.y > mFieldHeight - BOUNDS_BUFFER)
         {
-            mMovementDirection.y *= -1;
+            mPassingDirection.y *= -1;
         }
     }
 
@@ -263,7 +322,7 @@ public class SoccerGame
      * TODO: Don't completely recompute the average every time. Use the old average to avoid
      * needless computation.
      */
-    private void updateMovementDirection()
+    private void updatePassingDirection()
     {
         // Add the current location to the previous locations list so it can be used for finding
         // the movement direction of the ball.
@@ -304,28 +363,28 @@ public class SoccerGame
             directionVectors.add(directionVector);
         }
 
-        // Reset the movement direction.
-        mMovementDirection.x = 0;
-        mMovementDirection.y = 0;
+        // Reset the passing direction.
+        mPassingDirection.x = 0;
+        mPassingDirection.y = 0;
 
         int numDirectionVectors = directionVectors.size();
 
         // Sum up all of the direction vectors
         for (Point directionVector : directionVectors)
         {
-            mMovementDirection.x += directionVector.x;
-            mMovementDirection.y += directionVector.y;
+            mPassingDirection.x += directionVector.x;
+            mPassingDirection.y += directionVector.y;
         }
 
         // Divide to compute an average.
-        mMovementDirection.x /= numDirectionVectors;
-        mMovementDirection.y /= numDirectionVectors;
+        mPassingDirection.x /= numDirectionVectors;
+        mPassingDirection.y /= numDirectionVectors;
 
-        double directionMagnitude = Math.sqrt(Math.pow(mMovementDirection.x, 2) +
-                Math.pow(mMovementDirection.x, 2));
+        double directionMagnitude = Math.sqrt(Math.pow(mPassingDirection.x, 2) +
+                Math.pow(mPassingDirection.y, 2));
 
         // Normalize the direction so that it is just a unit vector.
-        mMovementDirection.x /= directionMagnitude;
-        mMovementDirection.y /= directionMagnitude;
+        mPassingDirection.x /= directionMagnitude;
+        mPassingDirection.y /= directionMagnitude;
     }
 }

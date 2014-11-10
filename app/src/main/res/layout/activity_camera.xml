@@ -43,7 +43,7 @@
             android:text="New Game"
             android:id="@+id/newGame"
             android:clickable="true"
-            android:onClick="resetScore"
+            android:onClick="onNewGamePressed"
             android:layout_alignParentTop="true"
             android:layout_toEndOf="@+id/bPoints" />
 

@@ -3,6 +3,7 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -35,7 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
+        SoccerGameDelegate
+{
     /**
      * Activity lifecycle callbacks
      */
@@ -158,16 +161,387 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     }
 
-    private void drawROI(Mat img) {
-        if (blueTurn) {
-            Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(0, 0, 255));
-        } else {
-            Core.circle(img, mTrackedCentroid, ROI_RADIUS, new Scalar(255, 0, 0));
+    /*
+     * SoccerGameDelegate functions.
+     */
+
+    public void onChangedTurn(final SoccerGame.Turn currentTurn)
+    {
+        // TODO: Freeze the game for some time so players can switch without stress.
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView textView = (TextView) findViewById(R.id.playerTurn);
+                if (currentTurn == SoccerGame.Turn.RED) {
+                    textView.setText("Turn: Red");
+                } else {
+                    textView.setText("Turn: Blue");
+                }
+            }
+        });
+    }
+
+    public void onGoalScored(final SoccerGame.Turn currentTurn)
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String message = "";
+                if (currentTurn == SoccerGame.Turn.RED)
+                {
+                    message += "Red";
+                }
+                else
+                {
+                    message += "Blue";
+                }
+
+                message += " Player Goal!";
+
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        updateScoreViews();
+    }
+
+    public void onOutOfBounds()
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), "Out of Bounds!",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private Mat processFrame(Mat frameGray, Mat frameRgba) {
+        // If a soccer game instance is not defined, create one.
+        if (mSoccerGame == null)
+        {
+            mSoccerGame = new SoccerGame(frameRgba.cols(), frameRgba.rows(), this);
+        }
+
+        if (mSoccerGame.isPassing())
+        {
+            mSoccerGame.passingFrame();
+        }
+        else
+        {
+            // Convert the frame to the right format for HSV processing.
+            Imgproc.cvtColor(frameRgba, mImgProcMat, Imgproc.COLOR_BGR2HSV);
+
+            // Define the ROI based on the location of the ball.
+            Point ballLocation = mSoccerGame.getBallLocation();
+            int ballRadius = mSoccerGame.getBallRadius();
+
+            mROI.x = Math.max((int) ballLocation.x - ballRadius, 0);
+            mROI.y = Math.max((int) ballLocation.y - ballRadius, 0);
+            mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
+            mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
+
+            //Log.d(TAG, "ballLocation.x " + ballLocation.x);
+            //Log.d(TAG, "ballLocation.y " + ballLocation.y);
+            //Log.d(TAG, "mROI.x " + mROI.x);
+            //Log.d(TAG, "mROI.y " + mROI.y);
+            //Log.d(TAG, "mROI.width " + mROI.width);
+            //Log.d(TAG, "mROI.height " + mROI.height);
+
+            Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
+
+            // Threshold based on hue and saturation (color detection) to eliminate things that are not
+            // euglena.
+            Core.inRange(roiMat, new Scalar(50, 50, 0), new Scalar(96, 200, 255),
+                    roiMat);
+            // Reduce noise in the ROI by using morphological opening and closing.
+            reduceNoise(roiMat);
+            // DEBUG: Show what the roiMat looks like so it can be visually debugged.
+            debugShowMat(roiMat);
+
+            // Detect contours in the ROI to find the shapes of euglena.
+            findContours(roiMat);
+            if (DEBUG_MODE) {
+                Imgproc.drawContours(roiMat, mContours, -1, new Scalar(255, 0, 0), 1);
+            }
+
+            // Find the centroids associated with the detected contours.
+            findContourCentroids();
+            if (DEBUG_MODE) {
+                for (Point centroid : mCentroids) {
+                    Core.circle(frameRgba, new Point(centroid.x + mROI.x, centroid.y + mROI.y), 4,
+                            new Scalar(0, 255, 0));
+                }
+            }
+
+            double minDistance = Double.MAX_VALUE;
+            Point closestCentroid = null;
+            for (Point centroid : mCentroids) {
+                // Translate all of the centroid points to be in image coordinates instead of ROI
+                // coordinates.
+                centroid.x = centroid.x + mROI.x;
+                centroid.y = centroid.y + mROI.y;
+                double distance = Math.sqrt(Math.pow(centroid.x - ballLocation.x, 2) +
+                        Math.pow(centroid.y - ballLocation.y, 2));
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestCentroid = centroid;
+                }
+            }
+
+            // Move the ball to the closest centroid to the ball.
+            mSoccerGame.updateBallLocation(closestCentroid);
+        }
+
+        // TODO: Draw the ball
+        drawBall(frameRgba);
+        // TODO: Draw the goals
+        drawGoals(frameRgba);
+        // TODO: Draw the passing direction
+        drawPassingDirection(frameRgba);
+        // TODO: Draw power-ups
+
+//        drawDirection(frameRgba);
+//        updateROI(mTrackedCentroid, mImgProcMat.width(), mImgProcMat.height());
+//        // TODO: Update the ball's location to the closest centroid's location.
+//
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                time2 = System.currentTimeMillis();
+//                if (playerSwapBuffer) {
+//                    countTime = (int) (BUFFER_TIME + time - time2) / 1000;
+//                    if (countTime == 0) {
+//                        playerSwapBuffer = false;
+//                        time = System.currentTimeMillis();
+//                        time2 = System.currentTimeMillis();
+//                    }
+//
+//                    TextView countView = (TextView) findViewById(R.id.countDown);
+//                    countView.setText("Swap!: " + countTime);
+//                } else {
+//                    countTime = (int) (TIMER_TURN + time - time2) / 1000;
+//                    if (countTime == 0) {
+//                        swapPlayers();
+//                    }
+//                    TextView countView = (TextView) findViewById(R.id.countDown);
+//                    countView.setText("Countdown: " + countTime);
+//                }
+//            }
+//        });
+//
+//
+//        drawGoals(frameRgba);
+//
+//        if (mTrackedCentroid != null) {
+//            checkGoalReached(frameRgba);
+//        }
+//
+//        // TODO: Limit to ROI if there is one. If there isn't one, don't.
+//
+//        Mat roi = null;
+//
+//        // If an ROI is defined, use that ROI.
+//        if (mROITopLeft != null && mROIBottomRight != null) {
+//            roi = mImgProcMat.submat((int) mROITopLeft.y, (int) mROIBottomRight.y,
+//                    (int) mROITopLeft.x, (int) mROIBottomRight.x);
+//        }
+//        // Otherwise the ROI is the entire matrix.
+//        else {
+//            roi = mImgProcMat;
+//            mROITopLeft = new Point(0, 0);
+//            mROIBottomRight = new Point(mImgProcMat.width(), mImgProcMat.height());
+//        }
+//
+//        // If we aren't yet tracking a centroid, place in center.
+//        if (mTrackedCentroid == null) {
+//            resetBall(frameRgba);
+//        }
+//
+//        // If we are already tracking a centroid, find the centroid in the current image that is
+//        // closest to the one that we are tracking.
+//        else {
+//            if (passing) {
+//                throwBallAnimation(frameRgba);
+//            } else if (playerSwapBuffer) {
+//                //do nothing
+//
+//            } else {
+//
+//                if (resetGame) {
+//                    resetBall(frameRgba);
+//                    blueTurn = true;
+//                    redTurn = true;
+//                    playerSwapBuffer = true;
+//                    time = System.currentTimeMillis();
+//                    time2 = System.currentTimeMillis();
+//                    countTime = 0;
+//                    resetGame = false;
+//                }
+//                // If no centroids were found, just return the image since we can't do any point tracking.
+//                if (mCentroids.size() == 0) {
+//                    drawROI(frameRgba);
+//                    Tapped = false;
+//                }
+//
+//
+//
+//            /*if(playerSwapBuffer)
+//            {
+//                time = System.currentTimeMillis();
+//                time2 = System.currentTimeMillis();
+//
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        while (timeGap > 0) {
+//                            long gap = BUFFER_TIME + time2 - time;
+//                            timeGap = ((int) (long) gap)/1000;
+//                            time = System.currentTimeMillis();
+//                            TextView textView = (TextView) findViewById(R.id.countDown);
+//                            textView.setText("Countdown:" + (timeGap + 1));
+//                        }
+//                    }
+//
+//                });
+//
+//                playerSwapBuffer = false;
+//            }*/
+//                else {
+//                    double minDistance = Double.MAX_VALUE;
+//                    Point closestCentroid = null;
+//                    for (Point centroid : mCentroids) {
+//                        // Translate all of the centroid points to be in image coordinates instead of ROI
+//                        // coordinates.
+//                        centroid.x = centroid.x + mROITopLeft.x;
+//                        centroid.y = centroid.y + mROITopLeft.y;
+//                        double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
+//                                Math.pow(centroid.y - mTrackedCentroid.y, 2));
+//
+//                        if (distance < minDistance) {
+//                            minDistance = distance;
+//                            closestCentroid = centroid;
+//                        }
+//                    }
+//
+//                    mTrackedCentroid = closestCentroid;
+//                    mTrackedCentroids.add(mTrackedCentroid);
+//                    if (mTrackedCentroids.size() > 10) {
+//                        mTrackedCentroids.remove(0);
+//                    }
+//                    drawDirection(frameRgba);
+//                    updateROI(mTrackedCentroid, mImgProcMat.width(), mImgProcMat.height());
+//
+//                    outOfBounds(frameRgba);
+//
+//                    if (Tapped) {
+//                        Tapped = false;
+//                        //"throw" the ball
+//                        /*if (mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x < 0 + GOAL_WIDTH ||
+//                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y < 0 + GOAL_WIDTH ||
+//                                mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x > frameRgba.cols() - GOAL_WIDTH ||
+//                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y > frameRgba.rows() - GOAL_WIDTH) {
+//
+//                            resetBall(frameRgba);
+//
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
+//                                }
+//                            });
+//                        } else {*/
+//                        runOnUiThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
+//                            }
+//                        });
+//                        passing = true;
+//                        dirY = mAverageDirectionVector.y;
+//                        dirX = mAverageDirectionVector.x;
+//
+//
+//                        dirMagnitude = Math.sqrt(dirY * dirY + dirX * dirX);
+//                        normDirX = dirX / dirMagnitude;
+//                        normDirY = dirY / dirMagnitude;
+//
+//                        throwBallAnimation(frameRgba);
+//                        //throwBallInstant();
+//                        //ballToTap();
+//                        //}
+//                    }
+//                    updateROI(mTrackedCentroid, mImgProcMat.width(), mImgProcMat.height());
+//                }
+//            }
+//        }
+//
+//        updateROI(mTrackedCentroid, mImgProcMat.width(), mImgProcMat.height());
+//        Core.circle(frameRgba, mTrackedCentroid, 4, new Scalar(0, 0, 255));
+//
+//        drawROI(frameRgba);
+
+
+        //  TRACKING A SINGLE ENTITY:
+        //  Pick a centroid to track at random
+        //  Reduce region of interest to a box around the centroid
+        //  On each frame:
+        //      Find the centroids in the region of interest
+        //      Figure out which centroid is closest to the current centroid
+        //      Replace the current centroid with the closest centroid found.
+        //      Update the region of interest for the new centroid
+
+        return frameRgba;
+    }
+
+    private void reduceNoise(Mat mat) {
+        Size size = new Size(5, 5);
+        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
+
+        Imgproc.dilate(mat, mat, structuringElement);
+        Imgproc.erode(mat, mat, structuringElement);
+
+        Imgproc.erode(mat, mat, structuringElement);
+        Imgproc.dilate(mat, mat, structuringElement);
+    }
+
+    private void findContours(Mat img) {
+        mContours.clear();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
+                Imgproc.CHAIN_APPROX_SIMPLE);
+    }
+
+    private void findContourCentroids() {
+        mCentroids.clear();
+        for (MatOfPoint contour : mContours) {
+            Moments p = Imgproc.moments(contour, false);
+            Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
+            mCentroids.add(centroid);
         }
     }
 
+    private void drawBall(Mat img)
+    {
+        Scalar color;
+        SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
+        if (currentTurn == SoccerGame.Turn.RED)
+        {
+            // Red
+            color = new Scalar(255, 0, 0);
+        }
+        else
+        {
+            // Blue
+            color = new Scalar(0, 0, 255);
+        }
+        Core.circle(img, mSoccerGame.getBallLocation(), mSoccerGame.getBallRadius(), color);
+    }
+
     private void drawGoals(Mat img) {
-        int height = img.rows();
+        int height = mSoccerGame.getFieldHeight();
         float margin = (height - GOAL_HEIGHT) / 2;
 
 
@@ -222,355 +596,28 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
-        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(255, 0, 0), -1);
 
-        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(255, 0, 0), -1);
-        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255, 0, 0), -1);
-        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(0, 0, 255), -1);
     }
 
-    private void checkGoalReached(Mat img) {
-        if (mGoal1Rect == null) {
-            mGoal1Rect = new Rect(mGoal1TopLeft, mGoal1RArmBottomRight);
-        }
-
-        if (mGoal2Rect == null) {
-            mGoal2Rect = new Rect(mGoal2LArmTopLeft, mGoal2BottomRight);
-        }
-
-        if (mTrackedCentroid.inside(mGoal1Rect) && blueTurn) {
-
-            resetBall(img);
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Blue Player Goal!", Toast.LENGTH_SHORT).show();
-                    TextView textView = (TextView) findViewById(R.id.bPoints);
-                    textView.setText("Blue Player: \n" + bluePlayerPoints);
-                }
-            });
-
-            bluePlayerPoints++;
-        }
-
-        if (mTrackedCentroid.inside(mGoal2Rect) && redTurn) {
-
-            resetBall(img);
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Red Player Goal!", Toast.LENGTH_SHORT).show();
-                    TextView textView = (TextView) findViewById(R.id.rPoints);
-                    textView.setText("Red Player: \n" + redPlayerPoints);
-                }
-            });
-
-            redPlayerPoints++;
-        }
-    }
-
-    private Mat processFrame(Mat frameGray, Mat frameRgba) {
-        // Update the background subtraction model
-        //mBackgroundSubtractor.apply(frameGray, mForegroundMask);
-        //mBackgroundSubtractor2.apply(frameGray, mForegroundMask2);
-
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                time2 = System.currentTimeMillis();
-                if (playerSwapBuffer) {
-                    countTime = (int) (BUFFER_TIME + time - time2) / 1000;
-                    if (countTime == 0) {
-                        playerSwapBuffer = false;
-                        time = System.currentTimeMillis();
-                        time2 = System.currentTimeMillis();
-                    }
-
-                    TextView countView = (TextView) findViewById(R.id.countDown);
-                    countView.setText("Swap!: " + countTime);
-                } else {
-                    countTime = (int) (TIMER_TURN + time - time2) / 1000;
-                    if (countTime == 0) {
-                        swapPlayers();
-                    }
-                    TextView countView = (TextView) findViewById(R.id.countDown);
-                    countView.setText("Countdown: " + countTime);
-                }
-            }
-        });
-
-
-        drawGoals(frameRgba);
-
-        if (mTrackedCentroid != null) {
-            checkGoalReached(frameRgba);
-        }
-
-        // TODO: Limit to ROI if there is one. If there isn't one, don't.
-
-        Imgproc.cvtColor(frameRgba, mForegroundMask, Imgproc.COLOR_BGR2HSV);
-
-        Mat roi = null;
-
-        // If an ROI is defined, use that ROI.
-        if (mROITopLeft != null && mROIBottomRight != null) {
-            roi = mForegroundMask.submat((int) mROITopLeft.y, (int) mROIBottomRight.y,
-                    (int) mROITopLeft.x, (int) mROIBottomRight.x);
-        }
-        // Otherwise the ROI is the entire matrix.
-        else {
-            roi = mForegroundMask;
-            mROITopLeft = new Point(0, 0);
-            mROIBottomRight = new Point(mForegroundMask.width(), mForegroundMask.height());
-        }
-
-        Core.inRange(roi, new Scalar(50, 50, 0), new Scalar(96, 200, 255),
-                roi);
-
-        reduceNoise(roi);
-
-        debugShowMat(roi);
-
-        findContours(roi);
-        if (DEBUG_MODE) {
-            Imgproc.drawContours(roi, mContours, -1, new Scalar(255, 0, 0), 1);
-        }
-
-        findContourCentroids();
-        if (DEBUG_MODE) {
-            for (Point centroid : mCentroids) {
-                Core.circle(frameRgba, new Point(centroid.x + mROITopLeft.x, centroid.y + mROITopLeft.y), 4, new Scalar(0, 255, 0));
-            }
-        }
-
-        // If we aren't yet tracking a centroid, place in center.
-        if (mTrackedCentroid == null) {
-            resetBall(frameRgba);
-        }
-
-        // If we are already tracking a centroid, find the centroid in the current image that is
-        // closest to the one that we are tracking.
-        else {
-            if (passing) {
-                throwBallAnimation(frameRgba);
-            } else if (playerSwapBuffer) {
-                //do nothing
-
-            } else {
-
-                if (resetGame) {
-                    resetBall(frameRgba);
-                    blueTurn = true;
-                    redTurn = true;
-                    playerSwapBuffer = true;
-                    time = System.currentTimeMillis();
-                    time2 = System.currentTimeMillis();
-                    countTime = 0;
-                    resetGame = false;
-                }
-                // If no centroids were found, just return the image since we can't do any point tracking.
-                if (mCentroids.size() == 0) {
-                    drawROI(frameRgba);
-                    Tapped = false;
-                }
-
-
-
-            /*if(playerSwapBuffer)
-            {
-                time = System.currentTimeMillis();
-                time2 = System.currentTimeMillis();
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (timeGap > 0) {
-                            long gap = BUFFER_TIME + time2 - time;
-                            timeGap = ((int) (long) gap)/1000;
-                            time = System.currentTimeMillis();
-                            TextView textView = (TextView) findViewById(R.id.countDown);
-                            textView.setText("Countdown:" + (timeGap + 1));
-                        }
-                    }
-
-                });
-
-                playerSwapBuffer = false;
-            }*/
-                else {
-                    double minDistance = Double.MAX_VALUE;
-                    Point closestCentroid = null;
-                    for (Point centroid : mCentroids) {
-                        // Translate all of the centroid points to be in image coordinates instead of ROI
-                        // coordinates.
-                        centroid.x = centroid.x + mROITopLeft.x;
-                        centroid.y = centroid.y + mROITopLeft.y;
-                        double distance = Math.sqrt(Math.pow(centroid.x - mTrackedCentroid.x, 2) +
-                                Math.pow(centroid.y - mTrackedCentroid.y, 2));
-
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestCentroid = centroid;
-                        }
-                    }
-
-                    mTrackedCentroid = closestCentroid;
-                    mTrackedCentroids.add(mTrackedCentroid);
-                    if (mTrackedCentroids.size() > 10) {
-                        mTrackedCentroids.remove(0);
-                    }
-                    drawDirection(frameRgba);
-                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
-
-                    outOfBounds(frameRgba);
-
-                    if (Tapped) {
-                        Tapped = false;
-                        //"throw" the ball
-                        /*if (mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x < 0 + GOAL_WIDTH ||
-                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y < 0 + GOAL_WIDTH ||
-                                mTrackedCentroid.x + THROW_DISTANCE * mAverageDirectionVector.x > frameRgba.cols() - GOAL_WIDTH ||
-                                mTrackedCentroid.y + THROW_DISTANCE * mAverageDirectionVector.y > frameRgba.rows() - GOAL_WIDTH) {
-
-                            resetBall(frameRgba);
-
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        } else {*/
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        passing = true;
-                        dirY = mAverageDirectionVector.y;
-                        dirX = mAverageDirectionVector.x;
-
-
-                        dirMagnitude = Math.sqrt(dirY * dirY + dirX * dirX);
-                        normDirX = dirX / dirMagnitude;
-                        normDirY = dirY / dirMagnitude;
-
-                        throwBallAnimation(frameRgba);
-                        //throwBallInstant();
-                        //ballToTap();
-                        //}
-                    }
-                    updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
-                }
-            }
-        }
-
-        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
-        Core.circle(frameRgba, mTrackedCentroid, 4, new Scalar(0, 0, 255));
-
-        drawROI(frameRgba);
-
-
-        //  TRACKING A SINGLE ENTITY:
-        //  Pick a centroid to track at random
-        //  Reduce region of interest to a box around the centroid
-        //  On each frame:
-        //      Find the centroids in the region of interest
-        //      Figure out which centroid is closest to the current centroid
-        //      Replace the current centroid with the closest centroid found.
-        //      Update the region of interest for the new centroid
-
-        return frameRgba;
-    }
-
-    private void reduceNoise(Mat mat) {
-        Size size = new Size(5, 5);
-        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
-
-        Imgproc.dilate(mat, mat, structuringElement);
-        Imgproc.erode(mat, mat, structuringElement);
-
-        Imgproc.erode(mat, mat, structuringElement);
-        Imgproc.dilate(mat, mat, structuringElement);
-
-        //Imgproc.blur(mForegroundMask, mForegroundMask, new Size(4, 4));
-    }
-
-    private void findContours(Mat img) {
-        mContours.clear();
-        Mat hierarchy = new Mat();
-        Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
-                Imgproc.CHAIN_APPROX_SIMPLE);
-    }
-
-    private void findContourCentroids() {
-        mCentroids.clear();
-        for (MatOfPoint contour : mContours) {
-            Moments p = Imgproc.moments(contour, false);
-            Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
-            mCentroids.add(centroid);
-        }
-    }
-
-    private void updateROI(Point centroid, int maxWidth, int maxHeight) {
-        // TODO: Make sure that these points don't go off the edge of the image.
-        mROITopLeft = new Point(Math.max(centroid.x - ROI_WIDTH / 2, 0), Math.max(centroid.y - ROI_HEIGHT / 2, 0));
-        mROIBottomRight = new Point(Math.min(centroid.x + ROI_WIDTH / 2, maxWidth), Math.min(centroid.y + ROI_HEIGHT / 2, maxHeight));
-    }
-
-    private void drawDirection(Mat img) {
-        if (mTrackedCentroids.size() == 1) {
-            return;
-        }
-
-        ArrayList<Point> directionVectors = new ArrayList<Point>();
-
-        for (int i = 0; i < mTrackedCentroids.size() - 1; i++) {
-            Point previousPoint = mTrackedCentroids.get(i);
-            Point nextPoint = mTrackedCentroids.get(i + 1);
-            Point directionVector = new Point(nextPoint.x - previousPoint.x,
-                    nextPoint.y - previousPoint.y);
-
-            double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
-                    Math.pow(directionVector.y, 2));
-
-            // Normalize the direction vector to get a unit vector in that direction, then multiply
-            // by the distance that we want, which is the radius of the ROI because the newCenter
-            // should be the center of the ROI.
-            directionVector.x = directionVector.x / magnitude;
-            directionVector.y = directionVector.y / magnitude;
-
-            directionVectors.add(directionVector);
-        }
-
-        mAverageDirectionVector = new Point(0, 0);
-        for (int i = 0; i < directionVectors.size(); i++) {
-            Point directionVector = directionVectors.get(i);
-            mAverageDirectionVector.x += directionVector.x;
-            mAverageDirectionVector.y += directionVector.y;
-        }
-
-        mAverageDirectionVector.x /= directionVectors.size();
-        mAverageDirectionVector.y /= directionVectors.size();
-
-        mAverageDirectionVector.x *= ROI_RADIUS;
-        mAverageDirectionVector.y *= ROI_RADIUS;
-
-        Point ballLocation = new Point(mTrackedCentroid.x + mAverageDirectionVector.x,
-                mTrackedCentroid.y + mAverageDirectionVector.y);
-
-        Core.circle(img, ballLocation, BALL_RADIUS, new Scalar(255, 0, 0));
-    }
-
-    private void resetBall(Mat img) {
-        mTrackedCentroid = new Point(img.cols() / 2, img.rows() / 2);
-        updateROI(mTrackedCentroid, mForegroundMask.width(), mForegroundMask.height());
+    private void drawPassingDirection(Mat img) {
+        Point ballLocation = mSoccerGame.getBallLocation();
+        Point passingDirection = mSoccerGame.getPassingDirection();
+        int ballRadius = mSoccerGame.getBallRadius();
+
+        passingDirection.x *= ballRadius;
+        passingDirection.y *= ballRadius;
+
+        Point endPoint = new Point(ballLocation.x, ballLocation.y);
+        endPoint.x += passingDirection.x;
+        endPoint.y += passingDirection.y;
+
+        Core.line(img, ballLocation, endPoint, new Scalar(255, 0, 0));
     }
 
     private void throwBallInstant() {
@@ -603,24 +650,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private void ballToTap() {
         mTrackedCentroid = new Point(tapX, tapY);
-    }
-
-    private void outOfBounds(Mat img) {
-        if (mTrackedCentroid.x <= BOUNDS_BUFFER || mTrackedCentroid.y <= BOUNDS_BUFFER
-                || mTrackedCentroid.x >= img.cols() - BOUNDS_BUFFER || mTrackedCentroid.y >= img.rows() - BOUNDS_BUFFER) {
-            resetBall(img);
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT).show();
-
-                    swapPlayers();
-                }
-            });
-
-        }
-
     }
 
     private void swapPlayers() {
@@ -657,27 +686,33 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public void passButtonPressed(View v) {
-        Tapped = true;
-    }
-
-    public void resetScore(View v) {
-        redPlayerPoints = 0;
-        bluePlayerPoints = 0;
-
+        mSoccerGame.passBall();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), "New Game!", Toast.LENGTH_SHORT).show();
-                TextView textView = (TextView) findViewById(R.id.bPoints);
-                textView.setText("Blue Player: \n" + bluePlayerPoints);
-                TextView textView2 = (TextView) findViewById(R.id.rPoints);
-                textView2.setText("Red Player: \n" + redPlayerPoints);
+                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
             }
         });
-
-        resetGame = true;
     }
 
+    public void updateScoreViews()
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView textView = (TextView) findViewById(R.id.bPoints);
+                textView.setText("Blue Player: \n" + mSoccerGame.getBluePlayerPoints());
+                TextView textView2 = (TextView) findViewById(R.id.rPoints);
+                textView2.setText("Red Player: \n" + mSoccerGame.getRedPlayerPoints());
+            }
+        });
+    }
+
+    public void onNewGamePressed(View v)
+    {
+        mSoccerGame.reset();
+        updateScoreViews();
+    }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
     public static final int BALL_RADIUS = 15;
@@ -695,20 +730,21 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public static final int TIMER_TURN = 15999;
     public static final int BOUNDS_BUFFER = 20;
 
+    private SoccerGame mSoccerGame;
+
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
     private CameraBridgeViewBase mOpenCvCameraView;
     private BackgroundSubtractorMOG mBackgroundSubtractor;
     private BackgroundSubtractorMOG2 mBackgroundSubtractor2;
-    private Mat mForegroundMask;
+    private Mat mImgProcMat;
     private Mat mForegroundMask2;
     private List<Point> mCentroids;
     private Point mTrackedCentroid;
     private List<Point> mTrackedCentroids;
     private List<MatOfPoint> mContours;
     private Random mRandom;
-    private Point mROITopLeft;
-    private Point mROIBottomRight;
+    private Rect mROI;
 
     //private Point closestCentroid;
 
@@ -764,7 +800,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 case LoaderCallbackInterface.SUCCESS: {
                     mBackgroundSubtractor = new BackgroundSubtractorMOG();
                     mBackgroundSubtractor2 = new BackgroundSubtractorMOG2();
-                    mForegroundMask = new Mat();
+                    mImgProcMat = new Mat();
+                    mROI = new Rect();
                     mForegroundMask2 = new Mat();
                     mOpenCvCameraView.enableView();
                     break;
