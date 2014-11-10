@@ -478,34 +478,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         });
     }
 
-    /*private void throwBallInstant() {
-        mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE
-                * mAverageDirectionVector.x, mTrackedCentroid.y + THROW_DISTANCE
-                * mAverageDirectionVector.y);
-    }
-
-    private void throwBallAnimation(Mat img) {
-
-        Tapped = false;
-
-        if (frames < FRAMES_PER_THROW) {
-            mTrackedCentroid = new Point(mTrackedCentroid.x + (THROW_DISTANCE / FRAMES_PER_THROW)
-                    * normDirX, mTrackedCentroid.y + (THROW_DISTANCE / FRAMES_PER_THROW)
-                    * normDirY);
-
-            frames++;
-        } else {
-            passing = false;
-            frames = 0;
-        }
-
-        if (mTrackedCentroid.x < 0 + GOAL_WIDTH || mTrackedCentroid.x > img.cols() - GOAL_WIDTH) {
-            normDirX = -1 * normDirX;
-        } else if (mTrackedCentroid.y < 0 + GOAL_WIDTH || mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
-            normDirY = -1 * normDirY;
-        }
-    }*/
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         //Tapped = true;
