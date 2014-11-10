@@ -23,8 +23,8 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
-    public static final double FRAMES_PER_PASS = 15;
-    public static final double PASS_DISTANCE = 200;
+    public static final double FRAMES_PER_PASS = 120;
+    public static final double PASS_DISTANCE = 5000;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
 
@@ -224,24 +224,25 @@ public class SoccerGame
 
         mBallLocation = newLocation;
 
-        boolean outOfBounds = checkForOutOfBounds();
 
+        // Otherwise if a goal is scored.
+        if (checkForGoal())
+        {
+            resetBall();
+            //changeTurn();
+            return;
+        }
+
+        boolean outOfBounds = checkForOutOfBounds();
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
         if (mPassing && outOfBounds)
         {
             bounceOffWalls();
         }
-        // Otherwise if a goal is scored or if we are not passing and the ball is out of bounds we
-        // should reset the ball and change the turn.
-        else if (checkForGoal())
-        {
-            resetBall();
-            //changeTurn();
-            return;
-        }
         else if (!mPassing && outOfBounds)
         {
+            mDelegate.onOutOfBounds();
             resetBall();
             changeTurn();
             return;
@@ -365,7 +366,6 @@ public class SoccerGame
                 mBallLocation.x >= mFieldWidth - BOUNDS_BUFFER ||
                 mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER)
         {
-            mDelegate.onOutOfBounds();
             return true;
         }
 
