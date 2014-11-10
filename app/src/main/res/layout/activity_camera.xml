@@ -74,6 +74,16 @@
             android:layout_toLeftOf="@+id/rPoints"
             android:clickable="true"
             android:onClick="passButtonPressed" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Instructions"
+            android:id="@+id/instructButton"
+            android:layout_below="@+id/passButton"
+            android:layout_alignParentEnd="true"
+            android:clickable="true"
+            android:onClick="onInstructionsPressed" />
     </RelativeLayout>
 
     <ImageView

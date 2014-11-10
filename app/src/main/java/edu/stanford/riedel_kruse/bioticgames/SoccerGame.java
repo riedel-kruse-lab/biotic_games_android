@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class SoccerGame
 {
-    public static final long MILLISECONDS_PER_TURN = 15 * 1000;
+    public static final long MILLISECONDS_PER_TURN = 30 * 1000;
     public static final int DEFAULT_BALL_RADIUS = 50;
     public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
@@ -26,6 +26,7 @@ public class SoccerGame
     public static final double FRAMES_PER_PASS = 15;
     public static final double PASS_DISTANCE = 200;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
+    public static final int NO_PASS_POINTS = 3;
 
     public enum Turn
     {
@@ -99,6 +100,8 @@ public class SoccerGame
 
     public void passingFrame(long timeDelta)
     {
+
+        //if you want the timer to stop when passing, delete
         mTimeLeftInTurn -= timeDelta;
 
         // If the time in the turn ran out, give control to the other player.
@@ -106,7 +109,7 @@ public class SoccerGame
         {
             changeTurn();
         }
-        
+
         if (mPassingFrames >= FRAMES_PER_PASS)
         {
             mPassing = false;
@@ -206,6 +209,8 @@ public class SoccerGame
     {
         if (newLocation == null)
         {
+            //if you want the timer to stop when the ball is stagnant, delete
+
             mTimeLeftInTurn -= timeDelta;
 
             // If the time in the turn ran out, give control to the other player.
@@ -301,7 +306,14 @@ public class SoccerGame
         {
             if (mBallLocation.inside(mBlueGoal))
             {
-                mRedPlayerPoints++;
+                if(!mPassing)
+                {
+                    mRedPlayerPoints += NO_PASS_POINTS;
+                }
+                else
+                {
+                    mRedPlayerPoints++;
+                }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
                 if (mDelegate != null)
@@ -317,7 +329,14 @@ public class SoccerGame
         {
             if (mBallLocation.inside(mRedGoal))
             {
-                mBluePlayerPoints++;
+                if(!mPassing)
+                {
+                    mBluePlayerPoints += NO_PASS_POINTS;
+                }
+                else
+                {
+                    mBluePlayerPoints++;
+                }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
                 if (mDelegate != null)
