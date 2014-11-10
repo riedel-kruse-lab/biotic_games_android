@@ -22,8 +22,8 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
-    public static final int FRAMES_PER_PASS = 10;
-    public static final double PASS_DISTANCE = 0.5;
+    public static final double FRAMES_PER_PASS = 15;
+    public static final double PASS_DISTANCE = 200;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
 
     public enum Turn
@@ -160,7 +160,7 @@ public class SoccerGame
 
     public Point getPassingDirection()
     {
-        return mPassingDirection;
+        return mPassingDirection.clone();
     }
 
     public boolean isPassing()
@@ -367,7 +367,7 @@ public class SoccerGame
         mPassingDirection.x = 0;
         mPassingDirection.y = 0;
 
-        int numDirectionVectors = directionVectors.size();
+        double numDirectionVectors = directionVectors.size();
 
         // Sum up all of the direction vectors
         for (Point directionVector : directionVectors)
