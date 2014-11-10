@@ -132,7 +132,7 @@ public class SoccerGame
 
     public Point getBallLocation()
     {
-        return mBallLocation;
+        return mBallLocation.clone();
     }
 
     public int getBallRadius()

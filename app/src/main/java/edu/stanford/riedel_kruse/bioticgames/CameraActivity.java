@@ -259,10 +259,35 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             Point ballLocation = mSoccerGame.getBallLocation();
             int ballRadius = mSoccerGame.getBallRadius();
 
-            mROI.x = Math.max((int) ballLocation.x - ballRadius, 0);
-            mROI.y = Math.max((int) ballLocation.y - ballRadius, 0);
-            mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
-            mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
+            if (mPrevBallLocation != null && mPrevBallLocation.x == ballLocation.x &&
+                    mPrevBallLocation.y == ballLocation.y)
+            {
+                mTimeWithoutMovingCountdown -= timeDelta;
+            }
+            else
+            {
+                mTimeWithoutMovingCountdown = MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN;
+            }
+
+            mPrevBallLocation = ballLocation;
+
+            if (mTimeWithoutMovingCountdown <= 0)
+            {
+                // Choose the entire field as the ROI.
+                mROI.x = 0;
+                mROI.y = 0;
+                mROI.width = mSoccerGame.getFieldWidth();
+                mROI.height = mSoccerGame.getFieldHeight();
+            }
+            else
+            {
+                mROI.x = Math.max((int) ballLocation.x - ballRadius, 0);
+                mROI.y = Math.max((int) ballLocation.y - ballRadius, 0);
+                mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
+                mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
+            }
+
+
 
             Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
 
@@ -273,7 +298,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             // Reduce noise in the ROI by using morphological opening and closing.
             reduceNoise(roiMat);
             // DEBUG: Show what the roiMat looks like so it can be visually debugged.
-            debugShowMat(roiMat);
+            // TODO: There is a weird bug here when the roiMat is the entire image where the Bitmap
+            // is apparently not big enough.
+            if (mTimeWithoutMovingCountdown > 0)
+            {
+                debugShowMat(roiMat);
+            }
 
             // Detect contours in the ROI to find the shapes of euglena.
             findContours(roiMat);
@@ -528,12 +558,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
-    public static final boolean DEBUG_MODE = true;
+    public static final boolean DEBUG_MODE = false;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int SWAP_TIME = 5000;
+    public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
     private SoccerGame mSoccerGame;
 
@@ -548,6 +579,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private long mLastTimestamp;
     private boolean mSwapping;
     private long mSwapCountdown;
+
+    private Point mPrevBallLocation;
+    private long mTimeWithoutMovingCountdown;
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
