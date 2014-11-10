@@ -99,6 +99,14 @@ public class SoccerGame
 
     public void passingFrame(long timeDelta)
     {
+        mTimeLeftInTurn -= timeDelta;
+
+        // If the time in the turn ran out, give control to the other player.
+        if (mTimeLeftInTurn <= 0)
+        {
+            changeTurn();
+        }
+        
         if (mPassingFrames >= FRAMES_PER_PASS)
         {
             mPassing = false;
@@ -198,6 +206,14 @@ public class SoccerGame
     {
         if (newLocation == null)
         {
+            mTimeLeftInTurn -= timeDelta;
+
+            // If the time in the turn ran out, give control to the other player.
+            if (mTimeLeftInTurn <= 0)
+            {
+                changeTurn();
+            }
+
             return;
         }
 
