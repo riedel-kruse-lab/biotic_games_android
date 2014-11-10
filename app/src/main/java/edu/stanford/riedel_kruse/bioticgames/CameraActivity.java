@@ -60,12 +60,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
-        mTrackedCentroids = new ArrayList<Point>();
 
-        mRandom = new Random();
-
-        time = System.currentTimeMillis();
-        time2 = System.currentTimeMillis();
+        // -1 to indicate that this value is not yet initialized.
+        mLastTimestamp = -1;
     }
 
     private void createDebugViews(int numViews) {
@@ -168,6 +165,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public void onChangedTurn(final SoccerGame.Turn currentTurn)
     {
         // TODO: Freeze the game for some time so players can switch without stress.
+        mSwapping = true;
+        mSwapCountdown = SWAP_TIME;
+        updateSwapCountdown();
 
         runOnUiThread(new Runnable() {
             @Override
@@ -224,9 +224,29 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mSoccerGame = new SoccerGame(frameRgba.cols(), frameRgba.rows(), this);
         }
 
-        if (mSoccerGame.isPassing())
+        long currentTimestamp = System.currentTimeMillis();
+
+        long timeDelta;
+
+        if (mLastTimestamp == -1)
         {
-            mSoccerGame.passingFrame();
+            timeDelta = 0;
+        }
+        else
+        {
+            timeDelta = currentTimestamp - mLastTimestamp;
+        }
+
+        mLastTimestamp = currentTimestamp;
+
+
+        if (mSwapping)
+        {
+            mSwapCountdown -= timeDelta;
+        }
+        else if (mSoccerGame.isPassing())
+        {
+            mSoccerGame.passingFrame(timeDelta);
         }
         else
         {
@@ -292,15 +312,24 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             }
 
             // Move the ball to the closest centroid to the ball.
-            mSoccerGame.updateBallLocation(closestCentroid);
+            mSoccerGame.updateBallLocation(closestCentroid, timeDelta);
         }
 
-        // TODO: Draw the ball
         drawBall(frameRgba);
-        // TODO: Draw the goals
         drawGoals(frameRgba);
-        // TODO: Draw the passing direction
         drawPassingDirection(frameRgba);
+        if (mSwapping)
+        {
+            updateSwapCountdown();
+            if (mSwapCountdown <= 0)
+            {
+                mSwapping = false;
+            }
+        }
+        else
+        {
+            updateCountdown();
+        }
         // TODO: Draw power-ups
 
 //        drawDirection(frameRgba);
@@ -589,7 +618,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
 
         if (mGoal2RArmTopLeft == null) {
-            mGoal2RArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH, GOAL_HEIGHT - GOAL_WIDTH + margin);
+            mGoal2RArmTopLeft = new Point(img.cols() - GOAL_WIDTH - GOAL_EMPTY_WIDTH,
+                    GOAL_HEIGHT - GOAL_WIDTH + margin);
         }
 
         if (mGoal2RArmBottomRight == null) {
@@ -620,7 +650,31 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Core.line(img, ballLocation, endPoint, new Scalar(255, 0, 0));
     }
 
-    private void throwBallInstant() {
+    private void updateCountdown()
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                long timeLeft = mSoccerGame.getTimeLeftInTurn() / 1000;
+                TextView countView = (TextView) findViewById(R.id.countDown);
+                countView.setText("Countdown: " + timeLeft);
+            }
+        });
+    }
+
+    private void updateSwapCountdown()
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                long timeLeft = mSwapCountdown / 1000;
+                TextView countView = (TextView) findViewById(R.id.countDown);
+                countView.setText("Swap: " + timeLeft);
+            }
+        });
+    }
+
+    /*private void throwBallInstant() {
         mTrackedCentroid = new Point(mTrackedCentroid.x + THROW_DISTANCE
                 * mAverageDirectionVector.x, mTrackedCentroid.y + THROW_DISTANCE
                 * mAverageDirectionVector.y);
@@ -646,35 +700,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         } else if (mTrackedCentroid.y < 0 + GOAL_WIDTH || mTrackedCentroid.y > img.rows() - GOAL_WIDTH) {
             normDirY = -1 * normDirY;
         }
-    }
-
-    private void ballToTap() {
-        mTrackedCentroid = new Point(tapX, tapY);
-    }
-
-    private void swapPlayers() {
-
-        TextView textView = (TextView) findViewById(R.id.playerTurn);
-
-        if (blueTurn) {
-            blueTurn = false;
-            redTurn = true;
-
-            textView.setText("Turn: Red");
-        } else {
-            redTurn = false;
-            blueTurn = true;
-
-            textView.setText("Turn: Blue");
-        }
-
-        time = System.currentTimeMillis();
-        time2 = System.currentTimeMillis();
-        countTime = 1;
-
-        playerSwapBuffer = true;
-    }
-
+    }*/
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -715,38 +741,26 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
-    public static final int BALL_RADIUS = 15;
     public static final boolean DEBUG_MODE = true;
     public static final int NUM_DEBUG_VIEWS = 1;
-    public static final int ROI_WIDTH = 100;
-    public static final int ROI_HEIGHT = ROI_WIDTH;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
-    public static final int ROI_RADIUS = 50; //Radius of the circle drawn around the ROI (region of interest)
-    public static final double THROW_DISTANCE = 3;
-    public static final double FRAMES_PER_THROW = 10;
-    public static final int BUFFER_TIME = 3999;
-    public static final int TIMER_TURN = 15999;
-    public static final int BOUNDS_BUFFER = 20;
+    public static final int SWAP_TIME = 5000;
 
     private SoccerGame mSoccerGame;
 
     private ImageView[] mDebugImageViews;
     private Bitmap mDebugBitmap;
     private CameraBridgeViewBase mOpenCvCameraView;
-    private BackgroundSubtractorMOG mBackgroundSubtractor;
-    private BackgroundSubtractorMOG2 mBackgroundSubtractor2;
     private Mat mImgProcMat;
-    private Mat mForegroundMask2;
     private List<Point> mCentroids;
-    private Point mTrackedCentroid;
-    private List<Point> mTrackedCentroids;
     private List<MatOfPoint> mContours;
-    private Random mRandom;
     private Rect mROI;
 
-    //private Point closestCentroid;
+    private long mLastTimestamp;
+    private boolean mSwapping;
+    private long mSwapCountdown;
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
@@ -762,47 +776,16 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Point mGoal2RArmTopLeft;
     private Point mGoal2RArmBottomRight;
 
-    private Point mAverageDirectionVector;
-
-    private Rect mGoal1Rect;
-    private Rect mGoal2Rect;
-
-    public Boolean Tapped = false;
     public float tapX = 0;
     public float tapY = 0;
-
-    private double dirX = 0;
-    private double dirY = 0;
-    private int frames = 0;
-    private boolean passing = false;
-
-    private int bluePlayerPoints = 0;
-    private int redPlayerPoints = 0;
-    private boolean resetGame = false;
-    private boolean blueTurn = true;
-    private boolean redTurn = false;
-    private boolean playerSwapBuffer = true;
-    private int timeGap = 0;
-
-    private long time = 0;
-    private long time2 = 0;
-    private int countTime = 0;
-
-
-    private double normDirX;
-    private double normDirY;
-    private double dirMagnitude;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
-                    mBackgroundSubtractor = new BackgroundSubtractorMOG();
-                    mBackgroundSubtractor2 = new BackgroundSubtractorMOG2();
                     mImgProcMat = new Mat();
                     mROI = new Rect();
-                    mForegroundMask2 = new Mat();
                     mOpenCvCameraView.enableView();
                     break;
                 }

@@ -13,6 +13,7 @@ import java.util.List;
  */
 public class SoccerGame
 {
+    public static final long MILLISECONDS_PER_TURN = 15 * 1000;
     public static final int DEFAULT_BALL_RADIUS = 50;
     public static final int DEFAULT_GOAL_WIDTH = 10;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
@@ -43,6 +44,7 @@ public class SoccerGame
     private Turn mCurrentTurn;
     private boolean mPassing;
     private int mPassingFrames;
+    private long mTimeLeftInTurn;
 
     private SoccerGameDelegate mDelegate;
 
@@ -75,6 +77,7 @@ public class SoccerGame
         mBluePlayerPoints = 0;
         mCurrentTurn = Turn.RED;
         mPassing = false;
+        mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         // Reset the goal locations, heights, and widths.
         mRedGoal.x = 0;
@@ -93,12 +96,9 @@ public class SoccerGame
         }
         mPassing = true;
         mPassingFrames = 0;
-
-        // Count this as the first passing frame.
-        passingFrame();
     }
 
-    public void passingFrame()
+    public void passingFrame(long timeDelta)
     {
         if (mPassingFrames >= FRAMES_PER_PASS)
         {
@@ -120,7 +120,7 @@ public class SoccerGame
         Log.d(TAG, "ballLocation.x " + mBallLocation.x);
         Log.d(TAG, "ballLocation.y " + mBallLocation.y);
 
-        updateBallLocation(newLocation);
+        updateBallLocation(newLocation, timeDelta);
     }
 
     public Point getBallLocation()
@@ -163,6 +163,11 @@ public class SoccerGame
         return mPassingDirection;
     }
 
+    public long getTimeLeftInTurn()
+    {
+        return mTimeLeftInTurn;
+    }
+
     public boolean isPassing()
     {
         return mPassing;
@@ -189,7 +194,7 @@ public class SoccerGame
      * Updates the internal state of the soccer game with a new location for the ball.
      * @param newLocation The new location of the ball.
      */
-    public void updateBallLocation(Point newLocation)
+    public void updateBallLocation(Point newLocation, long timeDelta)
     {
         if (newLocation == null)
         {
@@ -223,6 +228,14 @@ public class SoccerGame
         {
             updatePassingDirection();
         }
+
+        mTimeLeftInTurn -= timeDelta;
+
+        // If the time in the turn ran out, give control to the other player.
+        if (mTimeLeftInTurn <= 0)
+        {
+            changeTurn();
+        }
     }
 
     private void bounceOffWalls()
@@ -250,6 +263,9 @@ public class SoccerGame
         {
             mCurrentTurn = Turn.RED;
         }
+
+        // Reset the amount of time left in the turn.
+        mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         if (mDelegate != null)
         {
