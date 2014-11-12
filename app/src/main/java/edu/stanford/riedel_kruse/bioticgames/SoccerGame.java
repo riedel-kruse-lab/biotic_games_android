@@ -1,6 +1,7 @@
 package edu.stanford.riedel_kruse.bioticgames;
 
 import android.util.Log;
+import android.widget.TextView;
 
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -82,7 +83,10 @@ public class SoccerGame
         mBallRadius = DEFAULT_BALL_RADIUS;
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
-        mCurrentTurn = Turn.RED;
+        if(getCurrentTurn() == Turn.RED)
+        {
+            changeTurn();
+        }
         mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         // Reset the goal locations, heights, and widths.
@@ -258,7 +262,7 @@ public class SoccerGame
 
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
-        if (mPassing && outOfBounds)
+        if (mPassing)
         {
             bounceOffWalls();
         }
@@ -327,13 +331,15 @@ public class SoccerGame
      */
     private void changeTurn()
     {
-        if (mCurrentTurn == Turn.RED)
+        mPassing = false;
+
+        if (mCurrentTurn == Turn.BLUE)
         {
-            mCurrentTurn = Turn.BLUE;
+            mCurrentTurn = Turn.RED;
         }
         else
         {
-            mCurrentTurn = Turn.RED;
+            mCurrentTurn = Turn.BLUE;
         }
 
         // Reset the amount of time left in the turn.
@@ -407,12 +413,14 @@ public class SoccerGame
      */
     private boolean checkForOutOfBounds()
     {
-        if (mBallLocation.x <= BOUNDS_BUFFER || mBallLocation.y <= BOUNDS_BUFFER ||
-                mBallLocation.x >= mFieldWidth - BOUNDS_BUFFER ||
-                mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER)
+        if(!mPassing)
         {
-            mDelegate.onOutOfBounds();
-            return true;
+            if (mBallLocation.x <= BOUNDS_BUFFER || mBallLocation.y <= BOUNDS_BUFFER ||
+                    mBallLocation.x >= mFieldWidth - BOUNDS_BUFFER ||
+                    mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER) {
+                mDelegate.onOutOfBounds();
+                return true;
+            }
         }
 
         return false;

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -176,10 +177,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             @Override
             public void run() {
                 TextView textView = (TextView) findViewById(R.id.playerTurn);
+                TextView textView1 = (TextView)findViewById(R.id.countDown);
                 if (currentTurn == SoccerGame.Turn.RED) {
                     textView.setText("Turn: Red");
+                    textView.setTextColor(Color.RED);
+                    textView1.setTextColor(Color.RED);
                 } else {
                     textView.setText("Turn: Blue");
+                    textView.setTextColor(Color.BLUE);
+                    textView1.setTextColor(Color.BLUE);
                 }
             }
         });
@@ -218,7 +224,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             @Override
             public void run() {
                 Toast toast = Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT);
-                toast.setGravity(Gravity.CENTER| Gravity.CENTER, 0, 0);
+                toast.setGravity(Gravity.CENTER | Gravity.CENTER, 0, 0);
                 toast.show();
             }
         });
@@ -724,7 +730,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             @Override
             public void run() {
                 Toast toast = Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT);
-                toast.setGravity(Gravity.CENTER| Gravity.CENTER, 0, 0);
+                toast.setGravity(Gravity.CENTER | Gravity.CENTER, 0, 0);
                 toast.show();
             }
         });
@@ -767,7 +773,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
-    public static final boolean DEBUG_MODE = true;
+    public static final boolean DEBUG_MODE = false;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;

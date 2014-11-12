@@ -7,35 +7,10 @@
     android:orientation="vertical"
     tools:context=".CameraActivity">
 
-    <edu.stanford.riedel_kruse.bioticgames.CameraView
-        android:id="@+id/camera_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        opencv:show_fps="true"
-        opencv:camera_id="any"
-        android:layout_weight="1" />
-
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="95dp"
+        android:layout_height="150dp"
         android:layout_gravity="center_horizontal">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Blue Player: \n 0"
-            android:id="@+id/bPoints"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentStart="true"
-            android:editable="false" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Red Player: \n 0"
-            android:id="@+id/rPoints"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true" />
 
         <Button
             android:layout_width="wrap_content"
@@ -45,14 +20,25 @@
             android:clickable="true"
             android:onClick="onNewGamePressed"
             android:layout_alignParentTop="true"
-            android:layout_toEndOf="@+id/bPoints" />
+            android:layout_alignParentStart="true" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Instructions"
+            android:id="@+id/instructButton"
+            android:clickable="true"
+            android:onClick="onInstructionsPressed"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@+id/newGame" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Countdown: 0"
+            android:textColor="#0000ff"
             android:id="@+id/countDown"
-            android:layout_below="@+id/newGame"
+            android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true" />
 
         <TextView
@@ -60,30 +46,57 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:text="Turn: Blue"
+            android:textColor="#0000ff"
             android:id="@+id/playerTurn"
-            android:layout_below="@+id/newGame"
-            android:layout_alignParentStart="true"
-            android:layout_alignBottom="@+id/countDown" />
+            android:layout_above="@+id/countDown"
+            android:layout_centerHorizontal="true" />
 
-        <Button
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pass!"
+            android:text="Blue Player: \n 0"
+            android:textColor="#0000ff"
+            android:id="@+id/bPoints"
+            android:editable="false"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Red Player: \n 0"
+            android:textColor="#ff0000"
+            android:id="@+id/rPoints"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true" />
+    </RelativeLayout>
+
+    <edu.stanford.riedel_kruse.bioticgames.CameraView
+        android:id="@+id/camera_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        opencv:show_fps="true"
+        opencv:camera_id="any"
+        android:layout_weight="1" />
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:layout_gravity="center_horizontal">
+
+        <Button
+            android:layout_width="300dp"
+            android:layout_height="100dp"
+            android:text="Throw Ball!"
+            android:textSize="30dp"
             android:id="@+id/passButton"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/rPoints"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"
             android:clickable="true"
             android:onClick="passButtonPressed" />
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Instructions"
-            android:id="@+id/instructButton"
-            android:layout_below="@+id/passButton"
-            android:layout_alignParentEnd="true"
-            android:clickable="true"
-            android:onClick="onInstructionsPressed" />
     </RelativeLayout>
 
     <ImageView
