@@ -24,8 +24,8 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
-    public static final double FRAMES_PER_PASS = 15;
-    public static final double PASS_DISTANCE = 200;
+    public static final double FRAMES_PER_PASS = 20;
+    public static final double PASS_DISTANCE = 400;
     public static final double POWER_UP_PROBABILITY = 0.001;
     public static final double POWER_DOWN_PROBABILITY = POWER_UP_PROBABILITY;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
@@ -253,7 +253,7 @@ public class SoccerGame
 
         if (Math.random() <= POWER_DOWN_PROBABILITY)
         {
-            spawnPowerDown();
+            //spawnPowerDown();
         }
 
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
@@ -302,7 +302,7 @@ public class SoccerGame
 
         ExtraTimePowerUp powerUp = new ExtraTimePowerUp(x, y);
 
-        mAvailableModifiers.add(powerUp);
+        //mAvailableModifiers.add(powerUp);
     }
 
     private void bounceOffWalls()

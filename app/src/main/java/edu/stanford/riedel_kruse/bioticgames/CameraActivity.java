@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -201,7 +202,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
                 message += " Player Goal!";
 
-                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+
+                Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER| Gravity.CENTER, 0, 0);
+                toast.show();
             }
         });
 
@@ -213,8 +217,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), "Out of Bounds!",
-                        Toast.LENGTH_SHORT).show();
+                Toast toast = Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER| Gravity.CENTER, 0, 0);
+                toast.show();
             }
         });
     }
@@ -718,7 +723,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT).show();
+                Toast toast = Toast.makeText(getApplicationContext(), "Pass!", Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER| Gravity.CENTER, 0, 0);
+                toast.show();
             }
         });
     }
@@ -747,9 +754,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Instructions");
         builder.setMessage("Try to score the ball into the other player's goal to win! " +
-                "You get 3 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
-                "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
-                "When time runs out, there is a short pause to hand off the controller to the other player."
+                        "You get 3 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
+                        "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
+                        "When time runs out, there is a short pause to hand off the controller to the other player."
         );
         builder.setCancelable(false);
         builder.setPositiveButton("Got it!", new DialogInterface.OnClickListener() {
