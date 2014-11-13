@@ -181,8 +181,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 TextView textView = (TextView) findViewById(R.id.playerTurn);
                 if (currentTurn == SoccerGame.Turn.RED) {
                     textView.setText("Turn: Red");
+                    Toast toast = Toast.makeText(getApplicationContext(), "Red Player Turn", Toast.LENGTH_SHORT);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
                 } else {
                     textView.setText("Turn: Blue");
+                    Toast toast = Toast.makeText(getApplicationContext(), "Blue Player Turn", Toast.LENGTH_SHORT);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
                 }
             }
         });
@@ -217,7 +223,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public void onPickupButtonPressed(final SoccerGame.Turn currentTurn)
     {
-        runOnUiThread(new Runnable() {
+        /*runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 String message = "";
@@ -231,13 +237,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 }
 
                 message += " Player Picked Up Ball, But Lost ";
-                message += mSoccerGame.getPointsScored() + " Points!";
+                message += mSoccerGame.getPointsScored() + " Point!";
 
                 Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
                 toast.setGravity(Gravity.CENTER, 0, 0);
                 toast.show();
             }
-        });
+        });*/
 
         updateScoreViews();
     }
@@ -276,6 +282,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
 
         mLastTimestamp = currentTimestamp;
+
+        if(mSoccerGame.turnCountGreaterThan())
+        {
+            showWinner();
+        }
 
 
         if (mSwapping)
@@ -370,9 +381,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
             // Move the ball to the closest centroid to the ball.
             mSoccerGame.updateBallLocation(closestCentroid, timeDelta);
+
+            blinkingArrow(frameRgba);
         }
 
-        drawBall(frameRgba);
+        //drawBall(frameRgba);
+        drawBallBlinker(frameRgba);
         drawGoals(frameRgba);
         drawPassingDirection(frameRgba);
         if (mSwapping)
@@ -388,17 +402,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             updateCountdown();
         }
 
-        Bitmap b = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
-
-        Paint paint = new Paint();
-        paint.setColor(Color.WHITE);
-        paint.setStyle(Paint.Style.FILL);
-        Canvas canvas = new Canvas(b);
-        canvas.drawPaint(paint);
-
-        paint.setColor(Color.WHITE);
-        paint.setTextSize(20);
-        canvas.drawText("Some Text", 10, 25, paint);
 
         return frameRgba;
     }
@@ -696,7 +699,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Credits");
-        builder.setMessage("Honesty Kim: Hardware & Programming\nDaniel Chiu: Programming\n" +
+        builder.setMessage("Honesty Kim: etc\nDaniel Chiu: Programming\n" +
                 "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
                         "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n"+
                 "Ingmar Riedel-Kruse: Advisor"
@@ -726,6 +729,91 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mROI.y = 0;
         mROI.width = mSoccerGame.getFieldWidth();
         mROI.height = mSoccerGame.getFieldHeight();
+    }
+
+    public void blinkingArrow(Mat img)
+    {
+        if((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
+            Scalar color;
+            SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
+            if (currentTurn == SoccerGame.Turn.RED) {
+                // Red
+                color = new Scalar(255, 0, 0);
+                Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
+                Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
+                Core.line(img, point1, point2, color);
+                Point point3 = new Point(img.cols() / 2 + 50, img.rows() / 2 + 50);
+                Point point4 = new Point(img.cols() / 2 + 50, img.rows() / 2 - 50);
+                Core.line(img, point3, point2, color);
+                Core.line(img, point4, point2, color);
+            } else {
+                // Blue
+                color = new Scalar(0, 0, 255);
+                Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
+                Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
+                Core.line(img, point1, point2, color);
+                Point point3 = new Point(img.cols() / 2 - 50, img.rows() / 2 + 50);
+                Point point4 = new Point(img.cols() / 2 - 50, img.rows() / 2 - 50);
+                Core.line(img, point3, point1, color);
+                Core.line(img, point4, point1, color);
+            }
+        }
+    }
+
+    public void troubleShootButtonPressed(View v)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Troubleshooting");
+        builder.setMessage("If there are no Euglena in the field of view, try moving the stage around, flushing " +
+                "the syringe, or adjusting the focusing knob.\n\n" + "If the Euglena aren't moving the way you " +
+                        "expect them to (i.e. sluggish), keep in mind these are real living organisms! They may " +
+                        "be off their circadian rhythms or may need be tired."
+        );
+        builder.setCancelable(false);
+        builder.setPositiveButton("Everything makes sense now!", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        builder.show();
+    }
+
+    public void drawBallBlinker(Mat img)
+    {
+        if((mSoccerGame.getTimeLeftInTurn() / 1000) > 5)
+        {
+            drawBall(img);
+        }
+        else
+        {
+            if((mSoccerGame.getTimeLeftInTurn() / 200) % 2 == 1)
+            {
+                drawBall(img);
+            }
+        }
+    }
+
+    public void showWinner()
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String msg = mSoccerGame.getWinningPlayer();
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                builder.setTitle("Game Over!");
+                builder.setMessage(msg
+                );
+                builder.setCancelable(false);
+                builder.setPositiveButton("Keep playing!", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    }
+                });
+                builder.show();
+
+                mSoccerGame.reset();
+                updateScoreViews();
+            }
+        });
     }
 
     /** End CvCameraViewListener2 */

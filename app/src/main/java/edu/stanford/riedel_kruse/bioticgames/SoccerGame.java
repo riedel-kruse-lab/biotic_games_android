@@ -24,9 +24,10 @@ public class SoccerGame
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
     public static final double FRAMES_PER_PASS = 20;
-    public static final double PASS_DISTANCE = 400;
+    public static final double PASS_DISTANCE = 500;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
+    public static final int NUM_TURNS = 6;
 
     public enum Turn
     {
@@ -48,6 +49,7 @@ public class SoccerGame
     private long mTimeLeftInTurn;
     private int pointsScored;
     private boolean pickupButtonPressed = false;
+    private int turnCount = 0;
 
     private SoccerGameDelegate mDelegate;
 
@@ -78,7 +80,11 @@ public class SoccerGame
         mBallRadius = DEFAULT_BALL_RADIUS;
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
-        mCurrentTurn = Turn.RED;
+        turnCount = 0;
+        if(mCurrentTurn != Turn.RED)
+        {
+            changeTurn();
+        }
         mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         // Reset the goal locations, heights, and widths.
@@ -283,6 +289,8 @@ public class SoccerGame
      */
     private void changeTurn()
     {
+        turnCount++;
+
         mPassing = false;
 
         if (mCurrentTurn == Turn.RED)
@@ -492,6 +500,30 @@ public class SoccerGame
     {
         pickupButtonPressed = true;
     }
+
+    public boolean turnCountGreaterThan()
+    {
+        if(turnCount > NUM_TURNS)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public String getWinningPlayer()
+    {
+        if(mRedPlayerPoints>mBluePlayerPoints)
+        {
+            return "Red Player Wins";
+        }
+        if(mBluePlayerPoints>mRedPlayerPoints)
+        {
+            return "Blue Player Wins";
+        }
+        else
+        {
+            return "Tie!";
+        }
+    }
 }
-
-
