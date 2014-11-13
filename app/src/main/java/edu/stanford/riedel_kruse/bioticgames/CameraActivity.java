@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -199,9 +203,39 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     message += "Blue";
                 }
 
-                message += " Player Goal!";
+                message += " Player Scored ";
+                message += mSoccerGame.getPointsScored() + " Points!";
 
-                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
+            }
+        });
+
+        updateScoreViews();
+    }
+
+    public void onPickupButtonPressed(final SoccerGame.Turn currentTurn)
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String message = "";
+                if (currentTurn == SoccerGame.Turn.RED)
+                {
+                    message += "Red";
+                }
+                else
+                {
+                    message += "Blue";
+                }
+
+                message += " Player Picked Up Ball, But Lost ";
+                message += mSoccerGame.getPointsScored() + " Points!";
+
+                Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
             }
         });
 
@@ -213,8 +247,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), "Out of Bounds!",
-                        Toast.LENGTH_SHORT).show();
+
+                Toast toast = Toast.makeText(getApplicationContext(), "Out of Bounds!", Toast.LENGTH_SHORT);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
             }
         });
     }
@@ -259,7 +295,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             Point ballLocation = mSoccerGame.getBallLocation();
             int ballRadius = mSoccerGame.getBallRadius();
 
-            if (mPrevBallLocation != null && mPrevBallLocation.x == ballLocation.x &&
+            /*if (mPrevBallLocation != null && mPrevBallLocation.x == ballLocation.x &&
                     mPrevBallLocation.y == ballLocation.y)
             {
                 mTimeWithoutMovingCountdown -= timeDelta;
@@ -267,17 +303,15 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             else
             {
                 mTimeWithoutMovingCountdown = MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN;
-            }
+            }*/
 
             mPrevBallLocation = ballLocation;
 
             if (mTimeWithoutMovingCountdown <= 0)
             {
                 // Choose the entire field as the ROI.
-                mROI.x = 0;
-                mROI.y = 0;
-                mROI.width = mSoccerGame.getFieldWidth();
-                mROI.height = mSoccerGame.getFieldHeight();
+                scanWholeViewForEuglena();
+                mTimeWithoutMovingCountdown = 1;
             }
             else
             {
@@ -286,8 +320,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
                 mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
             }
-
-
 
             Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
 
@@ -355,6 +387,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         {
             updateCountdown();
         }
+
+        Bitmap b = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+
+        Paint paint = new Paint();
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL);
+        Canvas canvas = new Canvas(b);
+        canvas.drawPaint(paint);
+
+        paint.setColor(Color.WHITE);
+        paint.setTextSize(20);
+        canvas.drawText("Some Text", 10, 25, paint);
 
         return frameRgba;
     }
@@ -494,6 +538,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 countView.setText("Countdown: " + timeLeft);
             }
         });
+
     }
 
     private void updateSwapCountdown()
@@ -527,9 +572,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             @Override
             public void run() {
                 TextView textView = (TextView) findViewById(R.id.bPoints);
-                textView.setText("Blue Player: \n" + mSoccerGame.getBluePlayerPoints());
+                textView.setText("  " + mSoccerGame.getBluePlayerPoints());
                 TextView textView2 = (TextView) findViewById(R.id.rPoints);
-                textView2.setText("Red Player: \n" + mSoccerGame.getRedPlayerPoints());
+                textView2.setText(mSoccerGame.getRedPlayerPoints() + "  ");
             }
         });
     }
@@ -551,7 +596,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         );
         builder.setCancelable(false);
         builder.setPositiveButton("Got it!", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog,int id) {
+            public void onClick(DialogInterface dialog, int id) {
             }
         });
         builder.show();
@@ -630,6 +675,57 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         return processFrame(inputFrame.gray(), inputFrame.rgba());
+    }
+
+    public void infoButtonPressed(View v)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("About Euglena:");
+        builder.setMessage("Euglena are a single-celled, photosynthetic organism! " +
+                        "Euglena can be controlled by light simuli. Can you tell if the Euglena seek or avoid the light?"
+       );
+        builder.setCancelable(false);
+        builder.setPositiveButton("I feel smarter already!", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        builder.show();
+    }
+
+    public void creditsButtonPressed(View v)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Credits");
+        builder.setMessage("Honesty Kim: Hardware & Programming\nDaniel Chiu: Programming\n" +
+                "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
+                        "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n"+
+                "Ingmar Riedel-Kruse: Advisor"
+        );
+        builder.setCancelable(false);
+        builder.setPositiveButton("Good job guys!", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        builder.show();
+    }
+
+    public void pickupButtonPressed(View v)
+    {
+        mSoccerGame.setPickupButtonPressedTrue();
+
+        mTimeWithoutMovingCountdown = 0;
+
+        Toast toast = Toast.makeText(getApplicationContext(), "-1 Point!", Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.CENTER, 0, 0);
+        toast.show();
+    }
+
+    public void scanWholeViewForEuglena()
+    {
+        mROI.x = 0;
+        mROI.y = 0;
+        mROI.width = mSoccerGame.getFieldWidth();
+        mROI.height = mSoccerGame.getFieldHeight();
     }
 
     /** End CvCameraViewListener2 */

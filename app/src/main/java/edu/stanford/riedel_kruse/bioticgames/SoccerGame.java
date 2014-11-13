@@ -23,8 +23,8 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
-    public static final double FRAMES_PER_PASS = 120;
-    public static final double PASS_DISTANCE = 5000;
+    public static final double FRAMES_PER_PASS = 20;
+    public static final double PASS_DISTANCE = 400;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
 
@@ -46,6 +46,8 @@ public class SoccerGame
     private boolean mPassing;
     private int mPassingFrames;
     private long mTimeLeftInTurn;
+    private int pointsScored;
+    private boolean pickupButtonPressed = false;
 
     private SoccerGameDelegate mDelegate;
 
@@ -204,6 +206,8 @@ public class SoccerGame
      */
     public void updateBallLocation(Point newLocation, long timeDelta)
     {
+        checkIfPickupButtonPressed();
+
         if (newLocation == null)
         {
             //if you want the timer to stop when the ball is stagnant, delete
@@ -279,6 +283,8 @@ public class SoccerGame
      */
     private void changeTurn()
     {
+        mPassing = false;
+
         if (mCurrentTurn == Turn.RED)
         {
             mCurrentTurn = Turn.BLUE;
@@ -312,10 +318,12 @@ public class SoccerGame
                 if(!mPassing)
                 {
                     mRedPlayerPoints += NO_PASS_POINTS;
+                    pointsScored = NO_PASS_POINTS;
                 }
                 else
                 {
                     mRedPlayerPoints++;
+                    pointsScored = 1;
                 }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
@@ -332,13 +340,20 @@ public class SoccerGame
         {
             if (mBallLocation.inside(mRedGoal))
             {
+                if(pickupButtonPressed)
+                {
+                    mBluePlayerPoints -= 1;
+                    pickupButtonPressed = false;
+                }
                 if(!mPassing)
                 {
                     mBluePlayerPoints += NO_PASS_POINTS;
+                    pointsScored = NO_PASS_POINTS;
                 }
                 else
                 {
                     mBluePlayerPoints++;
+                    pointsScored = 1;
                 }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
@@ -440,4 +455,43 @@ public class SoccerGame
         mPassingDirection.x /= directionMagnitude;
         mPassingDirection.y /= directionMagnitude;
     }
+
+    public int getPointsScored()
+    {
+       return pointsScored;
+    }
+
+    private void checkIfPickupButtonPressed()
+    {
+        if(pickupButtonPressed)
+        {
+
+            if(mCurrentTurn == Turn.RED)
+            {
+                mRedPlayerPoints -= 1;
+                pointsScored = -1;
+                if (mDelegate != null)
+                {
+                    mDelegate.onPickupButtonPressed(Turn.RED);
+                }
+            }
+            else
+            {
+                mBluePlayerPoints -= 1;
+                pointsScored = -1;
+                if (mDelegate != null)
+                {
+                    mDelegate.onPickupButtonPressed(Turn.BLUE);
+                }
+            }
+            pickupButtonPressed = false;
+        }
+    }
+
+    public void setPickupButtonPressedTrue()
+    {
+        pickupButtonPressed = true;
+    }
 }
+
+
