@@ -24,6 +24,7 @@ public class CameraView extends JavaCameraView
 
         Camera.Parameters params = mCamera.getParameters();
         params.setZoom(params.getMaxZoom() / 2);
+        params.setRotation(90);
         mCamera.setParameters(params);
 
         return retValue;

@@ -23,39 +23,27 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Start!"
-                android:textStyle="bold"
-                android:typeface="monospace"
-                android:id="@+id/newGame"
-                android:clickable="true"
-                android:onClick="onNewGamePressed"
-                android:layout_toEndOf="@+id/bPoints"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentStart="true" />
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Rules"
                 android:typeface="monospace"
                 android:id="@+id/instructButton"
                 android:clickable="true"
                 android:onClick="onInstructionsPressed"
-                android:layout_toEndOf="@+id/newGame"
+                android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true" />
 
             <Button
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Biotics"
+                android:text="Biology"
                 android:typeface="monospace"
                 android:id="@+id/infoButton"
                 android:layout_alignParentTop="true"
                 android:layout_toEndOf="@+id/instructButton"
                 android:clickable="true"
                 android:onClick="infoButtonPressed" />
+
+
 
             <Button
                 android:layout_width="0dp"
@@ -81,6 +69,28 @@
                 android:onClick="creditsButtonPressed" />
 
             </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Start!"
+            android:textStyle="bold"
+            android:typeface="monospace"
+            android:id="@+id/newGame"
+            android:clickable="true"
+            android:onClick="onNewGamePressed"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:layout_gravity="center_vertical" />
+        </LinearLayout>
 
 
 

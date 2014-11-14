@@ -584,6 +584,19 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public void onNewGamePressed(View v)
     {
+        boolean twoPlayer = false;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("New Game:");
+        builder.setNegativeButton("1 Player", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        builder.setPositiveButton("2 Player", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        builder.show();
         mSoccerGame.reset();
         updateScoreViews();
     }
@@ -822,3 +835,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 /* to turn off autofocus:
 http://answers.opencv.org/question/21377/how-turn-off-autofocus-with-camerabridgeviewbase/
  */
+
+//note: sdk file location: C:\Users\honestykim\AppData\Local\Android\android-studio\sdk\platform-tools
+//to record: adb shell screenrecord /sdcard/FILE_NAME.mp4
+//to download video: adb pull /sdcard/FILE_NAME.mp4 C:/Users/honestykim/Downloads
