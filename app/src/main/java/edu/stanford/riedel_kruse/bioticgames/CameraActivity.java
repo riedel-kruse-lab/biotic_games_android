@@ -447,7 +447,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             // Blue
             color = new Scalar(0, 0, 255);
         }
-        Core.circle(img, mSoccerGame.getBallLocation(), mSoccerGame.getBallRadius(), color);
+        Core.circle(img, mSoccerGame.getBallLocation(), mSoccerGame.getBallRadius(), color, 10);
     }
 
     private void drawGoals(Mat img) {
