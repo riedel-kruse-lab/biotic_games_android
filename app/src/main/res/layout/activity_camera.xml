@@ -5,13 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".CameraActivity"
-    android:screenOrientation="landscape">
+    tools:context=".CameraActivity">
 
     <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_gravity="center_horizontal">
+        android:id="@+id/menuOptionLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:orientation="horizontal"
@@ -30,9 +30,7 @@
                 android:typeface="monospace"
                 android:id="@+id/instructButton"
                 android:clickable="true"
-                android:onClick="onInstructionsPressed"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentTop="true" />
+                android:onClick="onInstructionsPressed" />
 
             <Button
                 android:layout_width="0dp"
@@ -41,10 +39,20 @@
                 android:text="Biotics"
                 android:typeface="monospace"
                 android:id="@+id/infoButton"
-                android:layout_alignParentTop="true"
-                android:layout_toEndOf="@+id/instructButton"
                 android:clickable="true"
                 android:onClick="infoButtonPressed" />
+
+            <Button
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:text="Start!"
+                android:textStyle="bold"
+                android:typeface="monospace"
+                android:id="@+id/newGame"
+                android:clickable="true"
+                android:onClick="onNewGamePressed"
+                />
 
             <Button
                 android:layout_width="0dp"
@@ -52,7 +60,6 @@
                 android:layout_weight="1"
                 android:text="Problems?"
                 android:id="@+id/troubleShootButton"
-                android:layout_alignParentTop="true"
                 android:clickable="true"
                 android:onClick="troubleShootButtonPressed" />
 
@@ -63,34 +70,67 @@
                 android:text="Credits"
                 android:typeface="monospace"
                 android:id="@+id/creditButton"
-                android:layout_alignParentTop="true"
-                android:layout_toEndOf="@+id/button"
-                android:layout_alignParentRight="true"
                 android:clickable="true"
                 android:onClick="creditsButtonPressed" />
 
             </LinearLayout>
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp">
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_below="@+id/menuLayout">
+            android:layout_height="wrap_content">
 
             <Button
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="Start!"
-                android:textStyle="bold"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="Throw Ball"
+                android:textSize="25dp"
                 android:typeface="monospace"
-                android:id="@+id/newGame"
+                android:id="@+id/passButton"
+                android:layout_alignParentLeft="true"
                 android:clickable="true"
-                android:onClick="onNewGamePressed"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentStart="true" />
+                android:onClick="passButtonPressed" />
+
+            <Button
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="Pickup Ball\n(-1 point)"
+                android:textSize="25dp"
+                android:typeface="monospace"
+                android:id="@+id/pickupButton"
+                android:layout_alignParentEnd="true"
+                android:clickable="true"
+                android:onClick="pickupButtonPressed" />
 
         </LinearLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="5">
+
+        <edu.stanford.riedel_kruse.bioticgames.CameraView
+            android:id="@+id/camera_view"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            opencv:show_fps="true"
+            opencv:camera_id="any"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/scoreBoard"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <TextView
             android:layout_width="wrap_content"
@@ -107,7 +147,7 @@
             android:layout_height="wrap_content"
             android:text="0  "
             android:typeface="monospace"
-            android:textColor="#ff0000"
+            android:textColor="#FF4444"
             android:textSize="40dp"
             android:id="@+id/rPoints"
             android:layout_alignBottom="@+id/countDown"
@@ -129,7 +169,7 @@
             android:layout_height="wrap_content"
             android:text="  0"
             android:textSize="40dp"
-            android:textColor="#0000ff"
+            android:textColor="#33B5E5"
             android:typeface="monospace"
             android:id="@+id/bPoints"
             android:editable="false"
@@ -137,47 +177,6 @@
             android:layout_alignParentStart="true" />
 
     </RelativeLayout>
-
-    <edu.stanford.riedel_kruse.bioticgames.CameraView
-        android:id="@+id/camera_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        opencv:show_fps="true"
-        opencv:camera_id="any"
-        android:layout_weight="1" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_gravity="center_horizontal">
-
-        <Button
-            android:layout_width="0dp"
-            android:layout_height="fill_parent"
-            android:layout_weight="1"
-            android:text="Throw Ball"
-            android:textSize="25dp"
-            android:typeface="monospace"
-            android:id="@+id/passButton"
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="true"
-            android:clickable="true"
-            android:onClick="passButtonPressed" />
-
-        <Button
-            android:layout_width="0dp"
-            android:layout_height="fill_parent"
-            android:layout_weight="1"
-            android:text="Pickup Ball\n(-1 point)"
-            android:textSize="25dp"
-            android:typeface="monospace"
-            android:id="@+id/pickupButton"
-            android:layout_centerVertical="true"
-            android:layout_alignParentEnd="true"
-            android:clickable="true"
-            android:onClick="pickupButtonPressed" />
-
-    </LinearLayout>
 
     <ImageView
         android:id="@+id/debug_view"

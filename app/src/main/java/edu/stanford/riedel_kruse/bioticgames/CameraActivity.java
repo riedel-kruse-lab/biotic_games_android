@@ -440,12 +440,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         if (currentTurn == SoccerGame.Turn.RED)
         {
             // Red
-            color = new Scalar(255, 0, 0);
+            color = new Scalar(255, 68, 68);
         }
         else
         {
             // Blue
-            color = new Scalar(0, 0, 255);
+            color = new Scalar(51, 181, 229);
         }
         Core.circle(img, mSoccerGame.getBallLocation(), mSoccerGame.getBallRadius(), color, 10);
     }
@@ -507,13 +507,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
-        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(255, 0, 0), -1);
-        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(255, 0, 0), -1);
-        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(255, 0, 0), -1);
+        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(255, 68, 68), -1);
+        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(255, 68, 68), -1);
+        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(255, 68, 68), -1);
 
-        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(0, 0, 255), -1);
-        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(0, 0, 255), -1);
+        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(51, 181, 229), -1);
+        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(51, 181, 229), -1);
+        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(51, 181, 229), -1);
     }
 
     private void drawPassingDirection(Mat img) {
@@ -562,11 +562,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         tapX = event.getX();
         tapY = event.getY();
 
-        return super.onTouchEvent(event);
-    }
+        Point tappedPoint = new Point(tapX, tapY);
 
-    public void passButtonPressed(View v) {
-        mSoccerGame.passBall();
+        if(tappedPoint.inside(mROI))
+        {
+            mSoccerGame.setPickupButtonPressedTrue();
+        }
+        else
+        {
+            mSoccerGame.passBall();
+        }
+
+        return super.onTouchEvent(event);
     }
 
     public void updateScoreViews()
@@ -677,7 +684,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        return processFrame(inputFrame.gray(), inputFrame.rgba());
+        Mat flippedFrame = inputFrame.rgba();
+        Core.flip(inputFrame.rgba(),flippedFrame, -1);
+
+        return processFrame(inputFrame.gray(), flippedFrame);
     }
 
     public void infoButtonPressed(View v)
@@ -712,7 +722,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         builder.show();
     }
 
-    public void pickupButtonPressed(View v)
+    /*public void pickupButtonPressed(View v)
     {
         mSoccerGame.setPickupButtonPressedTrue();
 
@@ -721,14 +731,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Toast toast = Toast.makeText(getApplicationContext(), "-1 Point!", Toast.LENGTH_SHORT);
         toast.setGravity(Gravity.CENTER, 0, 0);
         toast.show();
-    }
+    }*/
 
     public void scanWholeViewForEuglena()
     {
-        mROI.x = 0;
-        mROI.y = 0;
-        mROI.width = mSoccerGame.getFieldWidth();
-        mROI.height = mSoccerGame.getFieldHeight();
+        mROI.x = mSoccerGame.getFieldWidth()/4;
+        mROI.y = mSoccerGame.getFieldHeight()/4;
+        mROI.width = mSoccerGame.getFieldWidth()/2;
+        mROI.height = mSoccerGame.getFieldHeight()/2;
     }
 
     public void blinkingArrow(Mat img)
@@ -738,7 +748,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
             if (currentTurn == SoccerGame.Turn.RED) {
                 // Red
-                color = new Scalar(255, 0, 0);
+                color = new Scalar(255, 68, 68);
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
                 Core.line(img, point1, point2, color);
@@ -748,7 +758,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 Core.line(img, point4, point2, color);
             } else {
                 // Blue
-                color = new Scalar(0, 0, 255);
+                color = new Scalar(51, 181, 229);
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
                 Core.line(img, point1, point2, color);

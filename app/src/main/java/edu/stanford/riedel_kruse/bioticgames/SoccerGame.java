@@ -526,4 +526,9 @@ public class SoccerGame
             return "Tie!";
         }
     }
+
+    public Rect returnMBlueGoal()
+    {
+        return mBlueGoal;
+    }
 }
