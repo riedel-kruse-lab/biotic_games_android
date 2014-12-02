@@ -528,7 +528,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         endPoint.x += passingDirection.x;
         endPoint.y += passingDirection.y;
 
-        Core.line(img, ballLocation, endPoint, new Scalar(0, 255, 0), 3);
+        Core.line(img, ballLocation, endPoint, new Scalar(0, 255, 0));
     }
 
     private void updateCountdown()
