@@ -28,6 +28,7 @@ public class SoccerGame
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
     public static final int NUM_TURNS = 6;
+    public static final double VELOCITY_SCALE = 10;
 
     public enum Turn
     {
@@ -50,6 +51,8 @@ public class SoccerGame
     private int pointsScored;
     private boolean pickupButtonPressed = false;
     private int turnCount = 0;
+    private double velocity = 0;
+    private Point mVelocityVector = new Point (0,0);
 
     private SoccerGameDelegate mDelegate;
 
@@ -226,6 +229,9 @@ public class SoccerGame
                 changeTurn();
             }
 
+            mVelocityVector = new Point (0,0);
+            velocity = 0;
+
             return;
         }
 
@@ -270,6 +276,8 @@ public class SoccerGame
         {
             changeTurn();
         }
+
+        updateVelocity();
     }
 
     private void bounceOffWalls()
@@ -292,6 +300,9 @@ public class SoccerGame
         turnCount++;
 
         mPassing = false;
+
+        mVelocityVector = new Point (0,0);
+        velocity = 0;
 
         if (mCurrentTurn == Turn.RED)
         {
@@ -531,4 +542,48 @@ public class SoccerGame
     {
         return mBlueGoal;
     }
+
+    public void updateVelocity()
+    {
+        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK)
+        {
+            mPreviousBallLocations.remove(0);
+        }
+
+        int numPreviousLocations = mPreviousBallLocations.size();
+        // If we only have one previous location, then we cannot compute any directions since we
+        // need two points to define a line.
+        if (numPreviousLocations == 1)
+        {
+            return;
+        }
+
+
+        for (int i = 0; i < numPreviousLocations - 1; i++)
+        {
+            Point previousPoint = mPreviousBallLocations.get(i);
+            Point nextPoint = mPreviousBallLocations.get(i + 1);
+            Point directionVector = new Point(nextPoint.x - previousPoint.x,
+                    nextPoint.y - previousPoint.y);
+
+            /*double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
+                    Math.pow(directionVector.y, 2));
+
+            velocity += VELOCITY_SCALE * magnitude;*/
+
+            mVelocityVector = new Point(mVelocityVector.x + directionVector.x, mVelocityVector.y + directionVector.y);
+        }
+
+        mVelocityVector = new Point(mVelocityVector.x/numPreviousLocations, mVelocityVector.y/numPreviousLocations);
+        velocity = Math.sqrt(Math.pow(mVelocityVector.x, 2) +
+                Math.pow(mVelocityVector.y, 2));
+
+    }
+
+    public double getVelocity()
+    {
+        return velocity;
+    }
+
+
 }

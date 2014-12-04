@@ -18,6 +18,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,6 +62,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             createDebugViews(NUM_DEBUG_VIEWS);
         }
 
+        //createZoomViews();
+
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
@@ -72,7 +75,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void createDebugViews(int numViews) {
-        LinearLayout layout = (LinearLayout) findViewById(R.id.camera_activity_layout);
+        RelativeLayout layout = (RelativeLayout) findViewById(R.id.zoomView);
 
         for (int i = 0; i < numViews; i++) {
             ImageView imageView = new ImageView(this);
@@ -82,6 +85,16 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mDebugImageViews[i] = imageView;
         }
     }
+
+//    private void createZoomViews() {
+//        LinearLayout layout = (LinearLayout) findViewById(R.id.camera_activity_layout);
+//
+//        ImageView imageView = new ImageView(this);
+//        imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
+//                LayoutParams.MATCH_PARENT, 1));
+//        layout.addView(imageView);
+//        mZoomViews = imageView;
+//    }
 
     @Override
     public void onDestroy() {
@@ -175,7 +188,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mSwapCountdown = SWAP_TIME;
         updateSwapCountdown();
 
-        runOnUiThread(new Runnable() {
+        /*runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 TextView textView = (TextView) findViewById(R.id.playerTurn);
@@ -191,7 +204,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     toast.show();
                 }
             }
-        });
+        });*/
     }
 
     public void onGoalScored(final SoccerGame.Turn currentTurn)
@@ -334,6 +347,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
             Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
 
+            Mat zoomMat = frameRgba.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
+            if (mTimeWithoutMovingCountdown > 0)
+            {
+                debugShowMat(zoomMat);
+            }
+
             // Threshold based on hue and saturation (color detection) to eliminate things that are not
             // euglena.
             Core.inRange(roiMat, new Scalar(50, 50, 0), new Scalar(96, 200, 255),
@@ -343,10 +362,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             // DEBUG: Show what the roiMat looks like so it can be visually debugged.
             // TODO: There is a weird bug here when the roiMat is the entire image where the Bitmap
             // is apparently not big enough.
-            if (mTimeWithoutMovingCountdown > 0)
-            {
-                debugShowMat(roiMat);
-            }
+
 
             // Detect contours in the ROI to find the shapes of euglena.
             findContours(roiMat);
@@ -402,6 +418,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             updateCountdown();
         }
 
+        displayVelocity(frameRgba);
+
+        drawScaleBar(frameRgba);
 
         return frameRgba;
     }
@@ -507,13 +526,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH, GOAL_HEIGHT + margin);
         }
 
-        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(255, 68, 68), -1);
-        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(255, 68, 68), -1);
-        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(255, 68, 68), -1);
+        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(51, 181, 229), -1);
+        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(51, 181, 229), -1);
+        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(51, 181, 229), -1);
 
-        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(51, 181, 229), -1);
-        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(51, 181, 229), -1);
-        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(51, 181, 229), -1);
+        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(255, 68, 68), -1);
+        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255, 68, 68), -1);
+        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255, 68, 68), -1);
     }
 
     private void drawPassingDirection(Mat img) {
@@ -613,7 +632,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
-    public static final boolean DEBUG_MODE = false;
+    public static final boolean DEBUG_MODE = true;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
@@ -630,6 +649,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private List<Point> mCentroids;
     private List<MatOfPoint> mContours;
     private Rect mROI;
+
+    private ImageView mZoomViews;
+
 
     private long mLastTimestamp;
     private boolean mSwapping;
@@ -751,21 +773,21 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 color = new Scalar(255, 68, 68);
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
-                Core.line(img, point1, point2, color);
+                Core.line(img, point1, point2, color, 3);
                 Point point3 = new Point(img.cols() / 2 + 50, img.rows() / 2 + 50);
                 Point point4 = new Point(img.cols() / 2 + 50, img.rows() / 2 - 50);
-                Core.line(img, point3, point2, color);
-                Core.line(img, point4, point2, color);
+                Core.line(img, point3, point2, color, 3);
+                Core.line(img, point4, point2, color, 3);
             } else {
                 // Blue
                 color = new Scalar(51, 181, 229);
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
-                Core.line(img, point1, point2, color);
+                Core.line(img, point1, point2, color, 3);
                 Point point3 = new Point(img.cols() / 2 - 50, img.rows() / 2 + 50);
                 Point point4 = new Point(img.cols() / 2 - 50, img.rows() / 2 - 50);
-                Core.line(img, point3, point1, color);
-                Core.line(img, point4, point1, color);
+                Core.line(img, point3, point1, color, 3);
+                Core.line(img, point4, point1, color, 3);
             }
         }
     }
@@ -824,6 +846,29 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 updateScoreViews();
             }
         });
+    }
+
+    public void displayVelocity(Mat img)
+    {
+        String velocityString = Double.toString(roundDown2(mSoccerGame.getVelocity()));
+        Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 10);
+
+        Core.putText(img, velocityString + "um/sec", mStringLocation,
+                1, 4, new Scalar(200,200,250), 5);
+    }
+
+    public void drawScaleBar(Mat img)
+    {
+        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.1),
+                new Point(mSoccerGame.getFieldWidth()/1.2 + 100, mSoccerGame.getFieldHeight()/1.1),
+                new Scalar(200,200,250), 3);
+        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.04),
+                1, 1.55, new Scalar(200,200,250), 2);
+    }
+
+    public static double roundDown2(double d)
+    {
+        return (long) (d * 1e2) / 1e2;
     }
 
     /** End CvCameraViewListener2 */
