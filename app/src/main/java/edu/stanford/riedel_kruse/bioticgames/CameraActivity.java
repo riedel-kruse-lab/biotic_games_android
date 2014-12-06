@@ -851,7 +851,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public void displayVelocity(Mat img)
     {
         String velocityString = Double.toString(roundDown2(mSoccerGame.getVelocity()));
-        Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 10);
+        Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 1.1);
 
         Core.putText(img, velocityString + "um/sec", mStringLocation,
                 1, 4, new Scalar(200,200,250), 5);
