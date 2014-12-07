@@ -19,7 +19,7 @@ public class MainActivity extends Activity
 
     public void playGame(View view)
     {
-        Intent intent = new Intent(this, CameraActivity.class);
+        Intent intent = new Intent(this, GameActivity.class);
         startActivity(intent);
     }
 }

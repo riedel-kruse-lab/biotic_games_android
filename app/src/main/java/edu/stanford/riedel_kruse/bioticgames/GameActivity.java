@@ -4,11 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,7 +12,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -36,14 +31,11 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
-import org.opencv.video.BackgroundSubtractorMOG;
-import org.opencv.video.BackgroundSubtractorMOG2;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
+public class GameActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
         SoccerGameDelegate
 {
     /**
@@ -53,7 +45,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+        setContentView(R.layout.activity_game);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -831,7 +823,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             public void run() {
                 String msg = mSoccerGame.getWinningPlayer();
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                AlertDialog.Builder builder = new AlertDialog.Builder(GameActivity.this);
                 builder.setTitle("Game Over!");
                 builder.setMessage(msg
                 );
