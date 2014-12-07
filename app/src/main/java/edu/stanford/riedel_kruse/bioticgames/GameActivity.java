@@ -3,8 +3,10 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,7 +47,17 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Intent intent = getIntent();
+        mTutorialMode = intent.getBooleanExtra(EXTRA_TUTORIAL_MODE, false);
+
         setContentView(R.layout.activity_game);
+
+        // If we're in tutorial mode, show the tutorial layout.
+        if (mTutorialMode)
+        {
+            findViewById(R.id.tutorialLayout).setVisibility(View.VISIBLE);
+        }
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -623,7 +635,9 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.CameraActivity";
+    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
+    public static final String EXTRA_TUTORIAL_MODE =
+            "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
     public static final boolean DEBUG_MODE = true;
     public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
@@ -631,6 +645,8 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int SWAP_TIME = 5000;
     public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
+
+    private boolean mTutorialMode;
 
     private SoccerGame mSoccerGame;
 

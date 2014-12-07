@@ -10,6 +10,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Play"
-        android:onClick="playGame"/>
+        android:onClick="startGame"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tutorial"
+        android:onClick="startTutorial"/>
 
 </LinearLayout>
