@@ -6,6 +6,20 @@
               android:gravity="center"
               android:orientation="vertical">
 
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="35sp"
+        android:gravity="center_horizontal"
+        android:text="Euglena Soccer"
+        android:textStyle="bold"
+        android:typeface="monospace"/>
+
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/euglenaIllustration" />
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
