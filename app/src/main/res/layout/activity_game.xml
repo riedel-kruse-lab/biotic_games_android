@@ -85,10 +85,11 @@
             <RelativeLayout
                 android:id="@+id/zoomView"
                 android:layout_width="wrap_content"
-                android:layout_height="200dp" >
+                android:layout_height="150dp" >
             </RelativeLayout>
 
             <LinearLayout
+                android:orientation="vertical"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
@@ -97,7 +98,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tutorial!" />
+                    android:id="@+id/tutorialText" />
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/tutorialButton"
+                    android:text="@string/tutorial_button_next"
+                    android:onClick="tutorialButtonPressed" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

@@ -53,6 +53,7 @@ public class SoccerGame
     private int turnCount = 0;
     private double velocity = 0;
     private Point mVelocityVector = new Point (0,0);
+    private boolean mCountdownPaused;
 
     private SoccerGameDelegate mDelegate;
 
@@ -68,6 +69,8 @@ public class SoccerGame
 
         mPassingDirection = new Point(0, 0);
         mPreviousBallLocations = new ArrayList<Point>();
+
+        mCountdownPaused = false;
 
         mRedGoal = new Rect();
         mBlueGoal = new Rect();
@@ -113,7 +116,10 @@ public class SoccerGame
     {
 
         //if you want the timer to stop when passing, delete
-        mTimeLeftInTurn -= timeDelta;
+        if (!mCountdownPaused)
+        {
+            mTimeLeftInTurn -= timeDelta;
+        }
 
         // If the time in the turn ran out, give control to the other player.
         if (mTimeLeftInTurn <= 0)
@@ -221,7 +227,10 @@ public class SoccerGame
         {
             //if you want the timer to stop when the ball is stagnant, delete
 
-            mTimeLeftInTurn -= timeDelta;
+            if (!mCountdownPaused)
+            {
+                mTimeLeftInTurn -= timeDelta;
+            }
 
             // If the time in the turn ran out, give control to the other player.
             if (mTimeLeftInTurn <= 0)
@@ -269,7 +278,10 @@ public class SoccerGame
             updatePassingDirection();
         }
 
-        mTimeLeftInTurn -= timeDelta;
+        if (!mCountdownPaused)
+        {
+            mTimeLeftInTurn -= timeDelta;
+        }
 
         // If the time in the turn ran out, give control to the other player.
         if (mTimeLeftInTurn <= 0)
@@ -585,5 +597,13 @@ public class SoccerGame
         return velocity;
     }
 
+    public void pauseCountdown()
+    {
+        mCountdownPaused = true;
+    }
 
+    public void resumeCountdown()
+    {
+        mCountdownPaused = false;
+    }
 }
