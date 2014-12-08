@@ -859,11 +859,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     public void drawScaleBar(Mat img)
     {
-        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.1),
-                new Point(mSoccerGame.getFieldWidth()/1.2 + 100, mSoccerGame.getFieldHeight()/1.1),
+        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.35, mSoccerGame.getFieldHeight()/1.2),
+                new Point(mSoccerGame.getFieldWidth()/1.35 + 100, mSoccerGame.getFieldHeight()/1.2),
                 new Scalar(200,200,250), 3);
-        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.04),
-                1, 1.55, new Scalar(200,200,250), 2);
+        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.5, mSoccerGame.getFieldHeight()/1.08),
+                1, 4, new Scalar(200,200,250), 5);
     }
 
     public static double roundDown2(double d)

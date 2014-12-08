@@ -27,8 +27,8 @@ public class SoccerGame
     public static final double PASS_DISTANCE = 500;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
-    public static final int NUM_TURNS = 6;
-    public static final double VELOCITY_SCALE = 10;
+    public static final int NUM_TURNS = 10000;
+    public static final double VELOCITY_SCALE = 15;
 
     public enum Turn
     {
@@ -578,6 +578,7 @@ public class SoccerGame
         velocity = Math.sqrt(Math.pow(mVelocityVector.x, 2) +
                 Math.pow(mVelocityVector.y, 2));
 
+        velocity = VELOCITY_SCALE * velocity;
     }
 
     public double getVelocity()
