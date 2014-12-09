@@ -15,7 +15,7 @@
         android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="portrait"
+            android:screenOrientation="landscape"
             android:configChanges="keyboardHidden|orientation" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Layout;
 import android.util.Log;
@@ -320,11 +321,12 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         if(mSoccerGame.turnCountGreaterThan())
         {
+            mSoccerGame.pauseCountdown();
             showWinner();
         }
 
 
-        if (mSwapping && mCountingDown)
+        if (mSwapping && mCountingDown && !mSoccerGame.returnCountdownPaused())
         {
             mSwapCountdown -= timeDelta;
         }
@@ -394,12 +396,12 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
             // Find the centroids associated with the detected contours.
             findContourCentroids();
-            if (DEBUG_MODE && mDrawCentroids) {
+            /*if (DEBUG_MODE && mDrawCentroids) {
                 for (Point centroid : mCentroids) {
                     Core.circle(frameRgba, new Point(centroid.x + mROI.x, centroid.y + mROI.y), 4,
                             new Scalar(0, 255, 0));
                 }
-            }
+            }*/
 
             double minDistance = Double.MAX_VALUE;
             Point closestCentroid = null;
@@ -418,7 +420,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
             }
 
             // Move the ball to the closest centroid to the ball.
-            if (mTracking)
+            if (mTracking && !mSoccerGame.returnCountdownPaused())
             {
                 mSoccerGame.updateBallLocation(closestCentroid, timeDelta);
             }
@@ -623,14 +625,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         Point tappedPoint = new Point(tapX, tapY);
 
-        if(tappedPoint.inside(mROI))
-        {
-            mSoccerGame.setPickupButtonPressedTrue();
-        }
-        else
-        {
-            mSoccerGame.passBall();
-        }
+        mSoccerGame.passBall();
 
         return super.onTouchEvent(event);
     }
@@ -897,6 +892,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
                 builder.setCancelable(false);
                 builder.setPositiveButton("Keep playing!", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+                        mSoccerGame.resumeCountdown();
                     }
                 });
                 builder.show();
@@ -914,8 +910,8 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
             return;
         }
 
-        String velocityString = Double.toString(roundDown2(mSoccerGame.getVelocity()));
-        Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 1.1);
+        String velocityString = Double.toString(mSoccerGame.getVelocity());
+        Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 1.05);
 
         Core.putText(img, velocityString + "um/sec", mStringLocation,
                 1, 4, new Scalar(200,200,250), 5);
@@ -923,11 +919,11 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public void drawScaleBar(Mat img)
     {
-        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.1),
-                new Point(mSoccerGame.getFieldWidth()/1.2 + 100, mSoccerGame.getFieldHeight()/1.1),
+        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.3, mSoccerGame.getFieldHeight()/1.1),
+                new Point(mSoccerGame.getFieldWidth()/1.3 + 150, mSoccerGame.getFieldHeight()/1.1),
                 new Scalar(200,200,250), 3);
-        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.2, mSoccerGame.getFieldHeight()/1.04),
-                1, 1.55, new Scalar(200,200,250), 2);
+        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.33, mSoccerGame.getFieldHeight()/1.04),
+                1, 3, new Scalar(200,200,250), 4);
     }
 
     public void updateTutorialViews()
@@ -939,6 +935,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         TextView tutorialTextView = (TextView) findViewById(R.id.tutorialText);
         tutorialTextView.setText(mTutorial.getCurrentStringResource());
+        tutorialTextView.setTextSize(20);
         mDrawBall = mTutorial.shouldDrawBall();
         mDrawDirection = mTutorial.shouldDrawDirection();
         mTracking = mTutorial.shouldTrack();
@@ -1027,13 +1024,27 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
                     tutorialLayout.setVisibility(View.GONE);
                 }
             });
+
+            backToMainMenu(view);
         }
     }
 
-    public static double roundDown2(double d)
+    public void backToMainMenu(View view)
     {
-        return (long) (d * 1e2) / 1e2;
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
     }
+
+    public void scanDoubleROI(){
+        mROI.x = mSoccerGame.getFieldWidth()/4;
+        mROI.y = mSoccerGame.getFieldHeight()/4;
+        mROI.width = mSoccerGame.getFieldWidth()/2;
+        mROI.height = mSoccerGame.getFieldHeight()/2;
+    }
+
+
+
+
 
     /** End CvCameraViewListener2 */
 }
