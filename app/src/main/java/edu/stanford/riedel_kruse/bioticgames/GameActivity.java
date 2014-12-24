@@ -44,6 +44,66 @@ import java.util.List;
 public class GameActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
         SoccerGameDelegate
 {
+    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
+    public static final String EXTRA_TUTORIAL_MODE =
+            "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
+    public static final boolean DEBUG_MODE = true;
+    public static final int NUM_DEBUG_VIEWS = 1;
+    public static final int GOAL_HEIGHT = 400;
+    public static final int GOAL_WIDTH = 10;
+    public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
+    public static final int SWAP_TIME = 5000;
+    public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
+
+    private Tutorial mTutorial;
+    private boolean mTutorialMode;
+
+    private boolean mDrawBall;
+    private boolean mTracking;
+    private boolean mDrawDirection;
+    private boolean mDrawGoals;
+    private boolean mDrawCentroids;
+    private boolean mDisplayVelocity;
+    private boolean mDrawBlinkingArrow;
+    private boolean mCountingDown;
+
+    private SoccerGame mSoccerGame;
+
+    private ImageView[] mDebugImageViews;
+    private Bitmap mDebugBitmap;
+    private CameraBridgeViewBase mOpenCvCameraView;
+    private Mat mImgProcMat;
+    private List<Point> mCentroids;
+    private List<MatOfPoint> mContours;
+    private Rect mROI;
+
+    private ImageView mZoomViews;
+
+
+    private long mLastTimestamp;
+    private boolean mSwapping;
+    private long mSwapCountdown;
+
+    private Point mPrevBallLocation;
+    private long mTimeWithoutMovingCountdown;
+
+    private Point mGoal1TopLeft;
+    private Point mGoal1BottomRight;
+    private Point mGoal1LArmTopLeft;
+    private Point mGoal1LArmBottomRight;
+    private Point mGoal1RArmTopLeft;
+    private Point mGoal1RArmBottomRight;
+
+    private Point mGoal2TopLeft;
+    private Point mGoal2BottomRight;
+    private Point mGoal2LArmTopLeft;
+    private Point mGoal2LArmBottomRight;
+    private Point mGoal2RArmTopLeft;
+    private Point mGoal2RArmBottomRight;
+
+    public float tapX = 0;
+    public float tapY = 0;
+
     /**
      * Activity lifecycle callbacks
      */
@@ -206,24 +266,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         mSwapping = true;
         mSwapCountdown = SWAP_TIME;
         updateSwapCountdown();
-
-        /*runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView textView = (TextView) findViewById(R.id.playerTurn);
-                if (currentTurn == SoccerGame.Turn.RED) {
-                    textView.setText("Turn: Red");
-                    Toast toast = Toast.makeText(getApplicationContext(), "Red Player Turn", Toast.LENGTH_SHORT);
-                    toast.setGravity(Gravity.CENTER, 0, 0);
-                    toast.show();
-                } else {
-                    textView.setText("Turn: Blue");
-                    Toast toast = Toast.makeText(getApplicationContext(), "Blue Player Turn", Toast.LENGTH_SHORT);
-                    toast.setGravity(Gravity.CENTER, 0, 0);
-                    toast.show();
-                }
-            }
-        });*/
     }
 
     public void onGoalScored(final SoccerGame.Turn currentTurn)
@@ -355,10 +397,11 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
             mPrevBallLocation = ballLocation;
 
-            if (mTimeWithoutMovingCountdown <= 0)
+            if (mTimeWithoutMovingCountdown <= 0 || mPrevBallLocation.x == ballLocation.x &&
+                    mPrevBallLocation.y == ballLocation.y)
             {
                 // Choose the entire field as the ROI.
-                scanWholeViewForEuglena();
+                scanDoubleROI();
                 mTimeWithoutMovingCountdown = 1;
             }
             else
@@ -420,7 +463,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
             }
 
             // Move the ball to the closest centroid to the ball.
-            if (mTracking && !mSoccerGame.returnCountdownPaused())
+            if (mTracking)
             {
                 mSoccerGame.updateBallLocation(closestCentroid, timeDelta);
             }
@@ -666,65 +709,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-    public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
-    public static final String EXTRA_TUTORIAL_MODE =
-            "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
-    public static final boolean DEBUG_MODE = true;
-    public static final int NUM_DEBUG_VIEWS = 1;
-    public static final int GOAL_HEIGHT = 400;
-    public static final int GOAL_WIDTH = 10;
-    public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
-    public static final int SWAP_TIME = 5000;
-    public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
-    private Tutorial mTutorial;
-    private boolean mTutorialMode;
-
-    private boolean mDrawBall;
-    private boolean mTracking;
-    private boolean mDrawDirection;
-    private boolean mDrawGoals;
-    private boolean mDrawCentroids;
-    private boolean mDisplayVelocity;
-    private boolean mDrawBlinkingArrow;
-    private boolean mCountingDown;
-
-    private SoccerGame mSoccerGame;
-
-    private ImageView[] mDebugImageViews;
-    private Bitmap mDebugBitmap;
-    private CameraBridgeViewBase mOpenCvCameraView;
-    private Mat mImgProcMat;
-    private List<Point> mCentroids;
-    private List<MatOfPoint> mContours;
-    private Rect mROI;
-
-    private ImageView mZoomViews;
-
-
-    private long mLastTimestamp;
-    private boolean mSwapping;
-    private long mSwapCountdown;
-
-    private Point mPrevBallLocation;
-    private long mTimeWithoutMovingCountdown;
-
-    private Point mGoal1TopLeft;
-    private Point mGoal1BottomRight;
-    private Point mGoal1LArmTopLeft;
-    private Point mGoal1LArmBottomRight;
-    private Point mGoal1RArmTopLeft;
-    private Point mGoal1RArmBottomRight;
-
-    private Point mGoal2TopLeft;
-    private Point mGoal2BottomRight;
-    private Point mGoal2LArmTopLeft;
-    private Point mGoal2LArmBottomRight;
-    private Point mGoal2RArmTopLeft;
-    private Point mGoal2RArmBottomRight;
-
-    public float tapX = 0;
-    public float tapY = 0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -1036,14 +1021,14 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     }
 
     public void scanDoubleROI(){
-        mROI.x = mSoccerGame.getFieldWidth()/4;
-        mROI.y = mSoccerGame.getFieldHeight()/4;
-        mROI.width = mSoccerGame.getFieldWidth()/2;
-        mROI.height = mSoccerGame.getFieldHeight()/2;
+        Point ballLocation = mSoccerGame.getBallLocation();
+        int ballRadius = mSoccerGame.getBallRadius();
+
+        mROI.x = Math.max((int) ballLocation.x - ballRadius *2, 0);
+        mROI.y = Math.max((int) ballLocation.y - ballRadius *2, 0);
+        mROI.width = Math.min(ballRadius * 4, mSoccerGame.getFieldWidth() - mROI.x);
+        mROI.height = Math.min(ballRadius * 4, mSoccerGame.getFieldHeight() - mROI.y);
     }
-
-
-
 
 
     /** End CvCameraViewListener2 */
