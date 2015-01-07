@@ -21,13 +21,15 @@ public class SoccerGame
      * How close the ball has to be to the edge of the screen to be considered out of bounds.
      * Required because the ball cannot technically actually leave the screen.
      */
-    public static final int BOUNDS_BUFFER = 20;
-    public static final int PREVIOUS_LOCATIONS_TO_TRACK = 10;
+    public static final int BOUNDS_BUFFER = 10;
+    public static final int PREVIOUS_LOCATIONS_TO_TRACK = 20;
+    public static final int PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY = 30;
     public static final double FRAMES_PER_PASS = 20;
     public static final double PASS_DISTANCE = 500;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
     public static final int NUM_TURNS = 6;
+    public static final double VELOCITY_SCALE = 10;
 
     public enum Turn
     {
@@ -50,6 +52,11 @@ public class SoccerGame
     private int pointsScored;
     private boolean pickupButtonPressed = false;
     private int turnCount = 0;
+    private double velocity = 0;
+    private double mMaxBlueVelocity = 0;
+    private double mMaxRedVelocity = 0;
+    private Point mVelocityVector = new Point (0,0);
+    private boolean mCountdownPaused;
 
     private SoccerGameDelegate mDelegate;
 
@@ -65,6 +72,8 @@ public class SoccerGame
 
         mPassingDirection = new Point(0, 0);
         mPreviousBallLocations = new ArrayList<Point>();
+
+        mCountdownPaused = false;
 
         mRedGoal = new Rect();
         mBlueGoal = new Rect();
@@ -85,6 +94,11 @@ public class SoccerGame
         {
             changeTurn();
         }
+        else
+        {
+            changeTurn();
+            changeTurn();
+        }
         mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
         // Reset the goal locations, heights, and widths.
@@ -102,6 +116,7 @@ public class SoccerGame
         {
             return;
         }
+        velocity = 0;
         mPassing = true;
         mPassingFrames = 0;
     }
@@ -110,7 +125,10 @@ public class SoccerGame
     {
 
         //if you want the timer to stop when passing, delete
-        mTimeLeftInTurn -= timeDelta;
+        if (!mCountdownPaused)
+        {
+            mTimeLeftInTurn -= timeDelta;
+        }
 
         // If the time in the turn ran out, give control to the other player.
         if (mTimeLeftInTurn <= 0)
@@ -218,13 +236,19 @@ public class SoccerGame
         {
             //if you want the timer to stop when the ball is stagnant, delete
 
-            mTimeLeftInTurn -= timeDelta;
+            if (!mCountdownPaused)
+            {
+                mTimeLeftInTurn -= timeDelta;
+            }
 
             // If the time in the turn ran out, give control to the other player.
             if (mTimeLeftInTurn <= 0)
             {
                 changeTurn();
             }
+
+            mVelocityVector = new Point (0,0);
+            velocity = 0;
 
             return;
         }
@@ -263,13 +287,18 @@ public class SoccerGame
             updatePassingDirection();
         }
 
-        mTimeLeftInTurn -= timeDelta;
+        if (!mCountdownPaused)
+        {
+            mTimeLeftInTurn -= timeDelta;
+        }
 
         // If the time in the turn ran out, give control to the other player.
         if (mTimeLeftInTurn <= 0)
         {
             changeTurn();
         }
+
+        updateVelocity();
     }
 
     private void bounceOffWalls()
@@ -292,6 +321,9 @@ public class SoccerGame
         turnCount++;
 
         mPassing = false;
+
+        mVelocityVector = new Point (0,0);
+        velocity = 0;
 
         if (mCurrentTurn == Turn.RED)
         {
@@ -515,15 +547,114 @@ public class SoccerGame
     {
         if(mRedPlayerPoints>mBluePlayerPoints)
         {
-            return "Red Player Wins";
+            return "Red Player Wins!\n\n" +
+                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
         }
         if(mBluePlayerPoints>mRedPlayerPoints)
         {
-            return "Blue Player Wins";
+            return "Blue Player Wins!\n\n" +
+                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
         }
         else
         {
-            return "Tie!";
+            return "Tie!\n\n" +
+                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
+                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
+
         }
+    }
+
+    public Rect returnMBlueGoal()
+    {
+        return mBlueGoal;
+    }
+
+    public void updateVelocity()
+    {
+        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY)
+        {
+            mPreviousBallLocations.remove(0);
+        }
+
+        int numPreviousLocations = mPreviousBallLocations.size();
+        // If we only have one previous location, then we cannot compute any directions since we
+        // need two points to define a line.
+        if (numPreviousLocations == 1)
+        {
+            return;
+        }
+
+
+        for (int i = 0; i < numPreviousLocations - 1; i++)
+        {
+            Point previousPoint = mPreviousBallLocations.get(i);
+            Point nextPoint = mPreviousBallLocations.get(i + 1);
+            Point directionVector = new Point(nextPoint.x - previousPoint.x,
+                    nextPoint.y - previousPoint.y);
+
+            mVelocityVector = new Point(mVelocityVector.x + directionVector.x, mVelocityVector.y + directionVector.y);
+        }
+
+        mVelocityVector = new Point(mVelocityVector.x/numPreviousLocations, mVelocityVector.y/numPreviousLocations);
+        velocity = VELOCITY_SCALE * (Math.sqrt(Math.pow(mVelocityVector.x, 2) +
+                Math.pow(mVelocityVector.y, 2)));
+
+        updateMaxVelocities();
+    }
+
+    private void updateMaxVelocities()
+    {
+        if(mCurrentTurn == Turn.RED)
+        {
+            if(mMaxRedVelocity<velocity&&velocity<100){
+                mMaxRedVelocity = velocity;
+            }
+        }
+        if(mCurrentTurn == Turn.BLUE)
+        {
+            if(mMaxBlueVelocity<velocity&&velocity<100){
+                mMaxBlueVelocity=velocity;
+            }
+        }
+    }
+
+    public double getVelocity()
+    {
+        return roundDown2(velocity);
+    }
+
+    public double getMaxBlueVelocity(){
+        return mMaxBlueVelocity;
+    }
+
+    public double getMaxRedVelocity(){
+        return mMaxRedVelocity;
+    }
+
+    public void pauseCountdown()
+    {
+        mCountdownPaused = true;
+    }
+
+    public void resumeCountdown()
+    {
+        mCountdownPaused = false;
+    }
+
+    public boolean returnCountdownPaused(){
+        return mCountdownPaused;
+    }
+
+    public static double roundDown2(double d)
+    {
+        return (long) (d * 1e2) / 1e2;
     }
 }
