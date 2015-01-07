@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Layout;
 import android.util.Log;
 import android.view.Gravity;
@@ -22,6 +24,9 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.zerokol.views.JoystickView;
+import com.zerokol.views.JoystickView.OnJoystickMoveListener;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -103,6 +108,11 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public float tapX = 0;
     public float tapY = 0;
+
+    private int mAngle;
+    private int mPower;
+
+    private boolean mConnected = false;
 
     /**
      * Activity lifecycle callbacks
@@ -492,6 +502,10 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         drawScaleBar(frameRgba);
 
+        //Read the joystick position and send it out via LEDs
+        getJoystickPosition();
+        sendJoystickPosition();
+
         return frameRgba;
     }
 
@@ -709,8 +723,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-
-
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -761,22 +773,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-    public void creditsButtonPressed(View v)
-    {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Credits");
-        builder.setMessage("Honesty Kim: etc\nDaniel Chiu: Programming\n" +
-                "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
-                        "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n"+
-                "Ingmar Riedel-Kruse: Advisor"
-        );
-        builder.setCancelable(false);
-        builder.setPositiveButton("Good job guys!", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-        builder.show();
-    }
+
 
     /*public void pickupButtonPressed(View v)
     {
@@ -1030,10 +1027,110 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         mROI.height = Math.min(ballRadius * 4, mSoccerGame.getFieldHeight() - mROI.y);
     }
 
+    //Function to get joystick position from joystickView
+    public void getJoystickPosition(){
+        JoystickView joystickView = (JoystickView) findViewById(R.id.joystickView);
+        joystickView.setOnJoystickMoveListener(new OnJoystickMoveListener() {
+            @Override
+            public void onValueChanged(int angle, int power, int direction) {
+                mAngle = angle;
+                mPower = power;
+            }
+        }, JoystickView.DEFAULT_LOOP_INTERVAL);
+    }
+
+    //Function to send joystick position to Arduino
+    public void sendJoystickPosition(){
+        String data = Integer.toString(mAngle) + " " + Integer.toString(mPower);
+        Message msg = Message.obtain();
+        msg.obj = data;
+        if (mConnected) {
+            writeHandler.sendMessage(msg);
+        }
+
+    }
 
     /** End CvCameraViewListener2 */
-}
 
-/* to turn off autofocus:
-http://answers.opencv.org/question/21377/how-turn-off-autofocus-with-camerabridgeviewbase/
- */
+
+    //below is all the Bluetooth stuff
+
+    //Below is all the Bluetooth stuff
+
+    // Tag for logging
+    private static final String TAG2 = "BluetoothActivity";
+
+    // MAC address of remote Bluetooth device
+    // Replace this with the address of your own module
+    private final String address = "00:06:66:67:E8:99";
+
+    // The thread that does all the work
+    BluetoothThread btt;
+
+    // Handler for writing messages to the Bluetooth connection
+    Handler writeHandler;
+
+    public final static String EXTRA_MESSAGE = "edu.stanford.riedel_kruse.bioticgames";
+
+
+    /**
+     * Launch the Bluetooth thread.
+     */
+    public void connectButtonPressed(View v) {
+        Log.v(TAG2, "Connect button pressed.");
+
+        // Only one thread at a time
+        if (btt != null) {
+            Log.w(TAG2, "Already connected!");
+            return;
+        }
+
+        // Initialize the Bluetooth thread, passing in a MAC address
+        // and a Handler that will receive incoming messages
+        btt = new BluetoothThread(address, new Handler() {
+
+            @Override
+            public void handleMessage(Message message) {
+
+                String s = (String) message.obj;
+
+                // Do something with the message
+                if (s.equals("CONNECTED")) {
+                    Button b = (Button) findViewById(R.id.btConnect);
+                    b.setText("Bluetooth Connected.");
+                    mConnected = true;
+                } else if (s.equals("DISCONNECTED")) {
+                    Button b = (Button) findViewById(R.id.btConnect);
+                    b.setText("Bluetooth Disconnected.");
+                    mConnected = false;
+                } else if (s.equals("CONNECTION FAILED")) {
+                    Button b = (Button) findViewById(R.id.btConnect);
+                    b.setText("Connection failed!");
+                    mConnected = false;
+                    btt = null;
+                }
+            }
+        });
+
+        // Get the handler that is used to send messages
+        writeHandler = btt.getWriteHandler();
+
+        // Run the thread
+        btt.start();
+
+        Button b = (Button) findViewById(R.id.btConnect);
+        b.setText("Connecting...");
+    }
+
+    /**
+     * Kill the Bluetooth thread.
+     */
+    public void disconnectButtonPressed(View v) {
+        Log.v(TAG2, "Disconnect button pressed.");
+
+        if(btt != null) {
+            btt.interrupt();
+            btt = null;
+        }
+    }
+}

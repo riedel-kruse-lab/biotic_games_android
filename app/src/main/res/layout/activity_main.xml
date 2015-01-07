@@ -32,4 +32,13 @@
         android:text="Tutorial"
         android:onClick="startTutorial"/>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Credits"
+        android:id="@+id/creditsButton"
+        android:layout_gravity="center_horizontal"
+        android:clickable="true"
+        android:onClick="creditsButtonPressed" />
+
 </LinearLayout>
