@@ -41,8 +41,9 @@ import org.opencv.imgproc.Moments;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
-        SoccerGameDelegate
+import edu.stanford.riedel_kruse.bioticgamessdk.BioticGameActivity;
+
+public class GameActivity extends BioticGameActivity implements SoccerGameDelegate
 {
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
@@ -191,6 +192,12 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     public void onResume() {
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
+    }
+
+    @Override
+    protected int getCameraViewResourceId()
+    {
+        return 0;
     }
 
     @Override
@@ -741,9 +748,18 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Mat flippedFrame = inputFrame.rgba();
-        Core.flip(inputFrame.rgba(),flippedFrame, -1);
 
         return processFrame(inputFrame.gray(), flippedFrame);
+    }
+
+    @Override
+    protected Mat processCameraFrame(Mat inputFrame)
+    {
+        // Flip the input frame so that it's orientation matches the orientation of the phone
+        // TODO: This sort of operation should be handled by the SDK automatically depending on
+        // the orientation of the phone.
+        Core.flip(inputFrame, inputFrame, -1);
+        return null;
     }
 
     public void infoButtonPressed(View v)
