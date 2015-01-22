@@ -1,11 +1,10 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 20
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "edu.stanford.riedel_kruse.bioticgames"
         minSdkVersion 19
         targetSdkVersion 20
         versionCode 1
@@ -22,5 +21,4 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':OpenCV4Android')
-    compile project(':sdk')
 }
