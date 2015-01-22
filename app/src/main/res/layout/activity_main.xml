@@ -15,10 +15,20 @@
         android:textStyle="bold"
         android:typeface="monospace"/>
 
-    <ImageView
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:src="@drawable/euglena_illustration" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:src="@drawable/euglena_illustration" />
+
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/soccer_ball"/>
+    </LinearLayout>
 
     <Button
         android:layout_width="wrap_content"
