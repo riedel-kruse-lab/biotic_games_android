@@ -20,7 +20,7 @@ public class SoccerGame
     public static final int DEFAULT_BALL_RADIUS = 60;
     public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
-    public static final int GOAL_OFFSET = 40;
+    public static final int GOAL_OFFSET = 50;
     /**
      * How close the ball has to be to the edge of the screen to be considered out of bounds.
      * Required because the ball cannot leave the screen without crashing.
@@ -339,7 +339,7 @@ public class SoccerGame
         {
             bounceOffWalls();
         }
-        else if (!mPassing && !mIsBouncing && outOfBounds)
+        else if (!(mPassing || mIsBouncing) && outOfBounds)
         {
             mSoundOutOfBounds = true;
             mDelegate.onOutOfBounds();
