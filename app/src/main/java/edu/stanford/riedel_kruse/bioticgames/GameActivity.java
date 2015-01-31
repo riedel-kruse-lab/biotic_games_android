@@ -28,8 +28,7 @@ import edu.stanford.riedel_kruse.bioticgamessdk.BioticGameActivity;
 import edu.stanford.riedel_kruse.bioticgamessdk.ImageProcessing;
 import edu.stanford.riedel_kruse.bioticgamessdk.MathUtil;
 
-public class GameActivity extends BioticGameActivity implements SoccerGameDelegate
-{
+public class GameActivity extends BioticGameActivity implements SoccerGameDelegate {
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
             "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
@@ -97,8 +96,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         mCountingDown = true;
 
         // If we're in tutorial mode, show the tutorial layout.
-        if (mTutorialMode)
-        {
+        if (mTutorialMode) {
             mTutorial = new Tutorial();
             findViewById(R.id.tutorialLayout).setVisibility(View.VISIBLE);
             updateTutorialViews();
@@ -193,8 +191,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         drawPassingDirection(frame);
         if (mSwapping) {
             updateSwapCountdown();
-        }
-        else {
+        } else {
             updateCountdown();
         }
 
@@ -213,31 +210,25 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     @Override
-    protected int getCameraViewResourceId()
-    {
+    protected int getCameraViewResourceId() {
         return R.id.camera_view;
     }
 
-    public void onChangedTurn(final SoccerGame.Turn currentTurn)
-    {
+    public void onChangedTurn(final SoccerGame.Turn currentTurn) {
         // TODO: Freeze the game for some time so players can switch without stress.
         mSwapping = true;
         mSwapCountdown = SWAP_TIME;
         updateSwapCountdown();
     }
 
-    public void onGoalScored(final SoccerGame.Turn currentTurn)
-    {
+    public void onGoalScored(final SoccerGame.Turn currentTurn) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 String message = "";
-                if (currentTurn == SoccerGame.Turn.RED)
-                {
+                if (currentTurn == SoccerGame.Turn.RED) {
                     message += "Red";
-                }
-                else
-                {
+                } else {
                     message += "Blue";
                 }
 
@@ -253,13 +244,11 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         updateScoreViews();
     }
 
-    public void onPickupButtonPressed(final SoccerGame.Turn currentTurn)
-    {
+    public void onPickupButtonPressed(final SoccerGame.Turn currentTurn) {
         updateScoreViews();
     }
 
-    public void onOutOfBounds()
-    {
+    public void onOutOfBounds() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -271,22 +260,17 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         });
     }
 
-    private void drawBall(Mat img)
-    {
-        if (!mDrawBall)
-        {
+    private void drawBall(Mat img) {
+        if (!mDrawBall) {
             return;
         }
 
         Scalar color;
         SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
-        if (currentTurn == SoccerGame.Turn.RED)
-        {
+        if (currentTurn == SoccerGame.Turn.RED) {
             // Red
             color = new Scalar(255, 68, 68);
-        }
-        else
-        {
+        } else {
             // Blue
             color = new Scalar(51, 181, 229);
         }
@@ -294,8 +278,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     private void drawGoals(Mat img) {
-        if (!mDrawGoals)
-        {
+        if (!mDrawGoals) {
             return;
         }
 
@@ -365,8 +348,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     private void drawPassingDirection(Mat img) {
-        if (!mDrawDirection)
-        {
+        if (!mDrawDirection) {
             return;
         }
 
@@ -384,8 +366,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         Core.line(img, ballLocation, endPoint, new Scalar(0, 255, 0));
     }
 
-    private void updateCountdown()
-    {
+    private void updateCountdown() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -397,8 +378,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     }
 
-    private void updateSwapCountdown()
-    {
+    private void updateSwapCountdown() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -415,8 +395,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         return super.onTouchEvent(event);
     }
 
-    public void updateScoreViews()
-    {
+    public void updateScoreViews() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -428,20 +407,18 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         });
     }
 
-    public void onNewGamePressed(View v)
-    {
+    public void onNewGamePressed(View v) {
         mSoccerGame.reset();
         updateScoreViews();
     }
 
-    public void onInstructionsPressed(View v)
-    {
+    public void onInstructionsPressed(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Instructions");
         builder.setMessage("Try to score the ball into the other player's goal to win! " +
-                "You get 3 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
-                "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
-                "When time runs out, there is a short pause to hand off the controller to the other player."
+                        "You get 3 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
+                        "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
+                        "When time runs out, there is a short pause to hand off the controller to the other player."
         );
         builder.setCancelable(false);
         builder.setPositiveButton("Got it!", new DialogInterface.OnClickListener() {
@@ -451,13 +428,12 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         builder.show();
     }
 
-    public void infoButtonPressed(View v)
-    {
+    public void infoButtonPressed(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("About Euglena:");
         builder.setMessage("Euglena are a single-celled, photosynthetic organism! " +
                         "Euglena can be controlled by light simuli. Can you tell if the Euglena seek or avoid the light?"
-       );
+        );
         builder.setCancelable(false);
         builder.setPositiveButton("I feel smarter already!", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
@@ -466,14 +442,13 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         builder.show();
     }
 
-    public void creditsButtonPressed(View v)
-    {
+    public void creditsButtonPressed(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Credits");
         builder.setMessage("Honesty Kim: etc\nDaniel Chiu: Programming\n" +
-                "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
-                        "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n"+
-                "Ingmar Riedel-Kruse: Advisor"
+                        "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
+                        "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n" +
+                        "Ingmar Riedel-Kruse: Advisor"
         );
         builder.setCancelable(false);
         builder.setPositiveButton("Good job guys!", new DialogInterface.OnClickListener() {
@@ -483,16 +458,14 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         builder.show();
     }
 
-    public void blinkingArrow(Mat img)
-    {
-        if (!mDrawBlinkingArrow)
-        {
+    public void blinkingArrow(Mat img) {
+        if (!mDrawBlinkingArrow) {
             return;
         }
 
         // TODO: It's not clear what this if statement is trying to accomplish. Needs a refactor or
         // a comment.
-        if((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
+        if ((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
             Scalar color;
             SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
             if (currentTurn == SoccerGame.Turn.RED) {
@@ -519,12 +492,11 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    public void troubleShootButtonPressed(View v)
-    {
+    public void troubleShootButtonPressed(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Troubleshooting");
         builder.setMessage("If there are no Euglena in the field of view, try moving the stage around, flushing " +
-                "the syringe, or adjusting the focusing knob.\n\n" + "If the Euglena aren't moving the way you " +
+                        "the syringe, or adjusting the focusing knob.\n\n" + "If the Euglena aren't moving the way you " +
                         "expect them to (i.e. sluggish), keep in mind these are real living organisms! They may " +
                         "be off their circadian rhythms or may need be tired."
         );
@@ -536,23 +508,17 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         builder.show();
     }
 
-    public void drawBallBlinker(Mat img)
-    {
-        if((mSoccerGame.getTimeLeftInTurn() / 1000) > 5)
-        {
+    public void drawBallBlinker(Mat img) {
+        if ((mSoccerGame.getTimeLeftInTurn() / 1000) > 5) {
             drawBall(img);
-        }
-        else
-        {
-            if((mSoccerGame.getTimeLeftInTurn() / 200) % 2 == 1)
-            {
+        } else {
+            if ((mSoccerGame.getTimeLeftInTurn() / 200) % 2 == 1) {
                 drawBall(img);
             }
         }
     }
 
-    public void onGameOver()
-    {
+    public void onGameOver() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -576,10 +542,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         });
     }
 
-    public void displayVelocity(Mat img)
-    {
-        if (!mDisplayVelocity)
-        {
+    public void displayVelocity(Mat img) {
+        if (!mDisplayVelocity) {
             return;
         }
 
@@ -587,22 +551,19 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 1.05);
 
         Core.putText(img, velocityString + "um/sec", mStringLocation,
-                1, 4, new Scalar(200,200,250), 5);
+                1, 4, new Scalar(200, 200, 250), 5);
     }
 
-    public void drawScaleBar(Mat img)
-    {
-        Core.line(img, new Point(mSoccerGame.getFieldWidth()/1.3, mSoccerGame.getFieldHeight()/1.1),
-                new Point(mSoccerGame.getFieldWidth()/1.3 + 150, mSoccerGame.getFieldHeight()/1.1),
-                new Scalar(200,200,250), 3);
-        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth()/1.33, mSoccerGame.getFieldHeight()/1.04),
-                1, 3, new Scalar(200,200,250), 4);
+    public void drawScaleBar(Mat img) {
+        Core.line(img, new Point(mSoccerGame.getFieldWidth() / 1.3, mSoccerGame.getFieldHeight() / 1.1),
+                new Point(mSoccerGame.getFieldWidth() / 1.3 + 150, mSoccerGame.getFieldHeight() / 1.1),
+                new Scalar(200, 200, 250), 3);
+        Core.putText(img, "100 um", new Point(mSoccerGame.getFieldWidth() / 1.33, mSoccerGame.getFieldHeight() / 1.04),
+                1, 3, new Scalar(200, 200, 250), 4);
     }
 
-    public void updateTutorialViews()
-    {
-        if (!mTutorialMode)
-        {
+    public void updateTutorialViews() {
+        if (!mTutorialMode) {
             return;
         }
 
@@ -615,17 +576,12 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         mDrawGoals = mTutorial.shouldDrawGoals();
         mDrawBlinkingArrow = mTutorial.shouldDrawBlinkingArrow();
         mCountingDown = mTutorial.shouldCountDown();
-        if (mCountingDown)
-        {
-            if (mSoccerGame != null)
-            {
+        if (mCountingDown) {
+            if (mSoccerGame != null) {
                 mSoccerGame.resumeCountdown();
             }
-        }
-        else
-        {
-            if (mSoccerGame != null)
-            {
+        } else {
+            if (mSoccerGame != null) {
                 mSoccerGame.pauseCountdown();
             }
         }
@@ -636,13 +592,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 TextView redScore = (TextView) findViewById(R.id.rPoints);
                 TextView blueScore = (TextView) findViewById(R.id.bPoints);
 
-                if (displayScores)
-                {
+                if (displayScores) {
                     redScore.setVisibility(View.VISIBLE);
                     blueScore.setVisibility(View.VISIBLE);
-                }
-                else
-                {
+                } else {
                     redScore.setVisibility(View.INVISIBLE);
                     blueScore.setVisibility(View.INVISIBLE);
                 }
@@ -654,12 +607,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             public void run() {
                 TextView countdown = (TextView) findViewById(R.id.countDown);
 
-                if (displayCountdown)
-                {
+                if (displayCountdown) {
                     countdown.setVisibility(View.VISIBLE);
-                }
-                else
-                {
+                } else {
                     countdown.setVisibility(View.INVISIBLE);
                 }
             }
@@ -676,18 +626,15 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         });
     }
 
-    public void tutorialButtonPressed(View view)
-    {
-        if (!mTutorialMode)
-        {
+    public void tutorialButtonPressed(View view) {
+        if (!mTutorialMode) {
             return;
         }
 
         mTutorial.advance();
         updateTutorialViews();
 
-        if (mTutorial.finished())
-        {
+        if (mTutorial.finished()) {
             mTutorialMode = false;
             runOnUiThread(new Runnable() {
                 @Override
@@ -701,8 +648,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    public void backToMainMenu(View view)
-    {
+    public void backToMainMenu(View view) {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
     }
