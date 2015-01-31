@@ -6,6 +6,8 @@ import org.opencv.core.Rect;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.stanford.riedel_kruse.bioticgamessdk.MathUtil;
+
 /**
  * Created by dchiu on 11/8/14.
  */
@@ -408,8 +410,6 @@ public class SoccerGame
     /**
      * Recomputes the movement direction of the ball using an average of the previous known
      * locations of the ball.
-     * TODO: Don't completely recompute the average every time. Use the old average to avoid
-     * needless computation.
      */
     private void updatePassingDirection()
     {
@@ -424,57 +424,11 @@ public class SoccerGame
             mPreviousBallLocations.remove(0);
         }
 
-        int numPreviousLocations = mPreviousBallLocations.size();
-        // If we only have one previous location, then we cannot compute any directions since we
-        // need two points to define a line.
-        if (numPreviousLocations == 1)
-        {
-            return;
+        Point averageDirection = MathUtil.computeAverageDirection(mPreviousBallLocations);
+
+        if (averageDirection != null) {
+            mPassingDirection = averageDirection;
         }
-
-        ArrayList<Point> directionVectors = new ArrayList<Point>();
-
-        // Compute the directions pairwise between the previous locations of the ball
-        for (int i = 0; i < numPreviousLocations - 1; i++)
-        {
-            Point previousPoint = mPreviousBallLocations.get(i);
-            Point nextPoint = mPreviousBallLocations.get(i + 1);
-            Point directionVector = new Point(nextPoint.x - previousPoint.x,
-                    nextPoint.y - previousPoint.y);
-
-            double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
-                    Math.pow(directionVector.y, 2));
-
-            // Normalize the direction vector to get a unit vector in that direction
-            directionVector.x = directionVector.x / magnitude;
-            directionVector.y = directionVector.y / magnitude;
-
-            directionVectors.add(directionVector);
-        }
-
-        // Reset the passing direction.
-        mPassingDirection.x = 0;
-        mPassingDirection.y = 0;
-
-        double numDirectionVectors = directionVectors.size();
-
-        // Sum up all of the direction vectors
-        for (Point directionVector : directionVectors)
-        {
-            mPassingDirection.x += directionVector.x;
-            mPassingDirection.y += directionVector.y;
-        }
-
-        // Divide to compute an average.
-        mPassingDirection.x /= numDirectionVectors;
-        mPassingDirection.y /= numDirectionVectors;
-
-        double directionMagnitude = Math.sqrt(Math.pow(mPassingDirection.x, 2) +
-                Math.pow(mPassingDirection.y, 2));
-
-        // Normalize the direction so that it is just a unit vector.
-        mPassingDirection.x /= directionMagnitude;
-        mPassingDirection.y /= directionMagnitude;
     }
 
     public int getPointsScored()
