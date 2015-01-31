@@ -25,7 +25,7 @@ public class SoccerGame
     public static final int PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY = 30;
     public static final long MILLISECONDS_PER_PASS = 3 * 1000;
     // TODO: Need to play with this value to see what feels right.
-    public static final double PASS_VELOCITY = 5000;
+    public static final double PASS_VELOCITY = 1;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
     public static final int NUM_TURNS_PER_GAME = 6;
