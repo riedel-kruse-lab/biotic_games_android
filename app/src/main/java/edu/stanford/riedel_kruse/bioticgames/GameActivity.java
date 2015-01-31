@@ -583,7 +583,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             return;
         }
 
-        String velocityString = Double.toString(mSoccerGame.getVelocity());
+        String velocityString = Double.toString(mSoccerGame.getSpeed());
         Point mStringLocation = new Point(mSoccerGame.getFieldWidth() / 10, mSoccerGame.getFieldHeight() / 1.05);
 
         Core.putText(img, velocityString + "um/sec", mStringLocation,
