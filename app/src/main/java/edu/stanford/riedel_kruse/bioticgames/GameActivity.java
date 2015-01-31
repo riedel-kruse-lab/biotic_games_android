@@ -1,17 +1,10 @@
 package edu.stanford.riedel_kruse.bioticgames;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Typeface;
 import android.os.Bundle;
-import android.text.Layout;
-import android.util.Log;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -23,26 +16,19 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class GameActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,
-        SoccerGameDelegate
+import edu.stanford.riedel_kruse.bioticgamessdk.BioticGameActivity;
+import edu.stanford.riedel_kruse.bioticgamessdk.ImageProcessing;
+import edu.stanford.riedel_kruse.bioticgamessdk.MathUtil;
+
+public class GameActivity extends BioticGameActivity implements SoccerGameDelegate
 {
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
@@ -62,7 +48,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     private boolean mTracking;
     private boolean mDrawDirection;
     private boolean mDrawGoals;
-    private boolean mDrawCentroids;
     private boolean mDisplayVelocity;
     private boolean mDrawBlinkingArrow;
     private boolean mCountingDown;
@@ -70,22 +55,9 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     private SoccerGame mSoccerGame;
 
     private ImageView[] mDebugImageViews;
-    private Bitmap mDebugBitmap;
-    private CameraBridgeViewBase mOpenCvCameraView;
-    private Mat mImgProcMat;
-    private List<Point> mCentroids;
-    private List<MatOfPoint> mContours;
-    private Rect mROI;
 
-    private ImageView mZoomViews;
-
-
-    private long mLastTimestamp;
     private boolean mSwapping;
     private long mSwapCountdown;
-
-    private Point mPrevBallLocation;
-    private long mTimeWithoutMovingCountdown;
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
@@ -110,18 +82,16 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.activity_game);
         super.onCreate(savedInstanceState);
 
         Intent intent = getIntent();
         mTutorialMode = intent.getBooleanExtra(EXTRA_TUTORIAL_MODE, false);
 
-        setContentView(R.layout.activity_game);
-
         mDrawBall = true;
         mTracking = true;
         mDrawDirection = true;
         mDrawGoals = true;
-        mDrawCentroids = true;
         mDisplayVelocity = true;
         mDrawBlinkingArrow = true;
         mCountingDown = true;
@@ -140,17 +110,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
             mDebugImageViews = new ImageView[NUM_DEBUG_VIEWS];
             createDebugViews(NUM_DEBUG_VIEWS);
         }
-
-        //createZoomViews();
-
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
-        mOpenCvCameraView.setCvCameraViewListener(this);
-
-        mCentroids = new ArrayList<Point>();
-        mContours = new ArrayList<MatOfPoint>();
-
-        // -1 to indicate that this value is not yet initialized.
-        mLastTimestamp = -1;
     }
 
     private void createDebugViews(int numViews) {
@@ -165,100 +124,99 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         }
     }
 
-//    private void createZoomViews() {
-//        LinearLayout layout = (LinearLayout) findViewById(R.id.camera_activity_layout);
-//
-//        ImageView imageView = new ImageView(this);
-//        imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-//                LayoutParams.MATCH_PARENT, 1));
-//        layout.addView(imageView);
-//        mZoomViews = imageView;
-//    }
+    private Point findClosestEuglenaToBall(Mat frame) {
+        // Get the model data about the ball.
+        Point ballLocation = mSoccerGame.getBallLocation();
+        int ballRadius = mSoccerGame.getBallRadius();
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        disableCameraView();
+        // Create a region of interest based on the location of the ball.
+        Rect roi = new Rect();
+        roi.x = Math.max((int) ballLocation.x - ballRadius, 0);
+        roi.y = Math.max((int) ballLocation.y - ballRadius, 0);
+        roi.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - roi.x);
+        roi.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - roi.y);
+
+        // Find all things that look like Euglena in the region of interest.
+        List<Point> euglenaLocations = ImageProcessing.findEuglenaInRoi(frame, roi);
+
+        // Find the location of the Euglena that is closest to the ball.
+        return MathUtil.findClosestPoint(ballLocation, euglenaLocations);
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        disableCameraView();
-    }
+    protected void updateGame(Mat frame, long timeDelta) {
+        // Flip the input frame so that it's orientation matches the orientation of the phone
+        // TODO: This sort of operation should be handled by the SDK automatically depending on
+        // the orientation of the phone.
+        Core.flip(frame, frame, -1);
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
-    }
+        // TODO: Is there a way to pre-init this without having to do a check on every frame?
+        initSoccerGame(frame.cols(), frame.rows());
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.camera, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        // If the game is over, then there's no need to process anything.
+        if (mSoccerGame.isGameOver()) {
+            return;
         }
 
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * End activity lifecycle callbacks
-     */
-
-    private void disableCameraView() {
-        if (mOpenCvCameraView != null) {
-            mOpenCvCameraView.disableView();
+        // If we're swapping, the game is essentially paused, so just update the swap countdown and
+        // return early.
+        if (mSwapping) {
+            mSwapCountdown -= timeDelta;
+            mSwapping = mSwapCountdown > 0;
+            return;
         }
+        // If we're passing the ball, then just tell the game how much time has passed.
+        else if (mSoccerGame.isPassing()) {
+            mSoccerGame.moveBallDuringPass(timeDelta);
+        }
+        // If we're not passing and we are tracking, then go ahead and find the closest Euglena to
+        // the ball.
+        else if (mTracking) {
+            Point closestEuglenaLocation = findClosestEuglenaToBall(frame);
+
+            // Update the ball's location to be at the closest Euglena's location.
+            mSoccerGame.updateBallLocation(closestEuglenaLocation);
+        }
+
+        mSoccerGame.checkCollisions();
+        mSoccerGame.updateTime(timeDelta);
     }
 
-    private void debugShowMat(Mat mat) {
-        debugShowMat(mat, 0);
+    @Override
+    protected Mat drawGame(Mat frame) {
+        if (mCountingDown && !mSoccerGame.isPassing()) {
+            blinkingArrow(frame);
+        }
+
+        drawBallBlinker(frame);
+        drawGoals(frame);
+        drawPassingDirection(frame);
+        if (mSwapping) {
+            updateSwapCountdown();
+        }
+        else {
+            updateCountdown();
+        }
+
+        displayVelocity(frame);
+        drawScaleBar(frame);
+        return frame;
     }
 
-    private void debugShowMat(Mat mat, final int viewIndex) {
-        if (DEBUG_MODE) {
-            int width = mat.cols();
-            int height = mat.rows();
-            if (mDebugBitmap == null) {
-                mDebugBitmap = Bitmap.createBitmap(width, height,
-                        Bitmap.Config.ARGB_8888);
+    private void initSoccerGame(int cols, int rows) {
+        if (mSoccerGame == null) {
+            mSoccerGame = new SoccerGame(cols, rows, this);
+            if (!mCountingDown) {
+                mSoccerGame.pauseCountdown();
             }
-
-            if (mDebugBitmap.getWidth() != width) {
-                mDebugBitmap.setWidth(width);
-            }
-
-            if (mDebugBitmap.getHeight() != height) {
-                mDebugBitmap.setHeight(height);
-            }
-
-            Utils.matToBitmap(mat, mDebugBitmap);
-
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    mDebugImageViews[viewIndex].setImageBitmap(mDebugBitmap);
-                }
-            });
         }
     }
 
-    /*
-     * SoccerGameDelegate functions.
-     */
+    @Override
+    protected int getCameraViewResourceId()
+    {
+        return R.id.camera_view;
+    }
 
     public void onChangedTurn(final SoccerGame.Turn currentTurn)
     {
@@ -297,28 +255,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public void onPickupButtonPressed(final SoccerGame.Turn currentTurn)
     {
-        /*runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                String message = "";
-                if (currentTurn == SoccerGame.Turn.RED)
-                {
-                    message += "Red";
-                }
-                else
-                {
-                    message += "Blue";
-                }
-
-                message += " Player Picked Up Ball, But Lost ";
-                message += mSoccerGame.getPointsScored() + " Point!";
-
-                Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
-                toast.setGravity(Gravity.CENTER, 0, 0);
-                toast.show();
-            }
-        });*/
-
         updateScoreViews();
     }
 
@@ -333,193 +269,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
                 toast.show();
             }
         });
-    }
-
-    private Mat processFrame(Mat frameGray, Mat frameRgba) {
-        // If a soccer game instance is not defined, create one.
-        if (mSoccerGame == null)
-        {
-            mSoccerGame = new SoccerGame(frameRgba.cols(), frameRgba.rows(), this);
-            if (!mCountingDown)
-            {
-                mSoccerGame.pauseCountdown();
-            }
-        }
-
-        long currentTimestamp = System.currentTimeMillis();
-
-        long timeDelta;
-
-        if (mLastTimestamp == -1)
-        {
-            timeDelta = 0;
-        }
-        else
-        {
-            timeDelta = currentTimestamp - mLastTimestamp;
-        }
-
-        mLastTimestamp = currentTimestamp;
-
-        if(mSoccerGame.turnCountGreaterThan())
-        {
-            mSoccerGame.pauseCountdown();
-            showWinner();
-        }
-
-
-        if (mSwapping && mCountingDown && !mSoccerGame.returnCountdownPaused())
-        {
-            mSwapCountdown -= timeDelta;
-        }
-        else if (mSoccerGame.isPassing())
-        {
-            mSoccerGame.passingFrame(timeDelta);
-        }
-        else
-        {
-            // Convert the frame to the right format for HSV processing.
-            Imgproc.cvtColor(frameRgba, mImgProcMat, Imgproc.COLOR_BGR2HSV);
-
-            // Define the ROI based on the location of the ball.
-            Point ballLocation = mSoccerGame.getBallLocation();
-            int ballRadius = mSoccerGame.getBallRadius();
-
-            /*if (mPrevBallLocation != null && mPrevBallLocation.x == ballLocation.x &&
-                    mPrevBallLocation.y == ballLocation.y)
-            {
-                mTimeWithoutMovingCountdown -= timeDelta;
-            }
-            else
-            {
-                mTimeWithoutMovingCountdown = MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN;
-            }*/
-
-            mPrevBallLocation = ballLocation;
-
-            if (mTimeWithoutMovingCountdown <= 0 || mPrevBallLocation.x == ballLocation.x &&
-                    mPrevBallLocation.y == ballLocation.y)
-            {
-                // Choose the entire field as the ROI.
-                scanDoubleROI();
-                mTimeWithoutMovingCountdown = 1;
-            }
-            else
-            {
-                mROI.x = Math.max((int) ballLocation.x - ballRadius, 0);
-                mROI.y = Math.max((int) ballLocation.y - ballRadius, 0);
-                mROI.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - mROI.x);
-                mROI.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - mROI.y);
-            }
-
-            Mat roiMat = mImgProcMat.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
-
-            Mat zoomMat = frameRgba.submat(mROI.y, mROI.y + mROI.height, mROI.x, mROI.x + mROI.width);
-            if (mTimeWithoutMovingCountdown > 0)
-            {
-                debugShowMat(zoomMat);
-            }
-
-            // Threshold based on hue and saturation (color detection) to eliminate things that are not
-            // euglena.
-            Core.inRange(roiMat, new Scalar(50, 50, 0), new Scalar(96, 200, 255),
-                    roiMat);
-            // Reduce noise in the ROI by using morphological opening and closing.
-            reduceNoise(roiMat);
-            // DEBUG: Show what the roiMat looks like so it can be visually debugged.
-            // TODO: There is a weird bug here when the roiMat is the entire image where the Bitmap
-            // is apparently not big enough.
-
-
-            // Detect contours in the ROI to find the shapes of euglena.
-            findContours(roiMat);
-            if (DEBUG_MODE) {
-                Imgproc.drawContours(roiMat, mContours, -1, new Scalar(255, 0, 0), 1);
-            }
-
-            // Find the centroids associated with the detected contours.
-            findContourCentroids();
-            /*if (DEBUG_MODE && mDrawCentroids) {
-                for (Point centroid : mCentroids) {
-                    Core.circle(frameRgba, new Point(centroid.x + mROI.x, centroid.y + mROI.y), 4,
-                            new Scalar(0, 255, 0));
-                }
-            }*/
-
-            double minDistance = Double.MAX_VALUE;
-            Point closestCentroid = null;
-            for (Point centroid : mCentroids) {
-                // Translate all of the centroid points to be in image coordinates instead of ROI
-                // coordinates.
-                centroid.x = centroid.x + mROI.x;
-                centroid.y = centroid.y + mROI.y;
-                double distance = Math.sqrt(Math.pow(centroid.x - ballLocation.x, 2) +
-                        Math.pow(centroid.y - ballLocation.y, 2));
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestCentroid = centroid;
-                }
-            }
-
-            // Move the ball to the closest centroid to the ball.
-            if (mTracking)
-            {
-                mSoccerGame.updateBallLocation(closestCentroid, timeDelta);
-            }
-
-            blinkingArrow(frameRgba);
-        }
-
-        //drawBall(frameRgba);
-        drawBallBlinker(frameRgba);
-        drawGoals(frameRgba);
-        drawPassingDirection(frameRgba);
-        if (mSwapping)
-        {
-            updateSwapCountdown();
-            if (mSwapCountdown <= 0)
-            {
-                mSwapping = false;
-            }
-        }
-        else
-        {
-            updateCountdown();
-        }
-
-        displayVelocity(frameRgba);
-
-        drawScaleBar(frameRgba);
-
-        return frameRgba;
-    }
-
-    private void reduceNoise(Mat mat) {
-        Size size = new Size(5, 5);
-        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
-
-        Imgproc.dilate(mat, mat, structuringElement);
-        Imgproc.erode(mat, mat, structuringElement);
-
-        Imgproc.erode(mat, mat, structuringElement);
-        Imgproc.dilate(mat, mat, structuringElement);
-    }
-
-    private void findContours(Mat img) {
-        mContours.clear();
-        Mat hierarchy = new Mat();
-        Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
-                Imgproc.CHAIN_APPROX_SIMPLE);
-    }
-
-    private void findContourCentroids() {
-        mCentroids.clear();
-        for (MatOfPoint contour : mContours) {
-            Moments p = Imgproc.moments(contour, false);
-            Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
-            mCentroids.add(centroid);
-        }
     }
 
     private void drawBall(Mat img)
@@ -662,14 +411,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        //Tapped = true;
-        tapX = event.getX();
-        tapY = event.getY();
-
-        Point tappedPoint = new Point(tapX, tapY);
-
         mSoccerGame.passBall();
-
         return super.onTouchEvent(event);
     }
 
@@ -709,43 +451,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS: {
-                    mImgProcMat = new Mat();
-                    mROI = new Rect();
-                    mOpenCvCameraView.enableView();
-                    break;
-                }
-                default: {
-                    super.onManagerConnected(status);
-                    break;
-                }
-            }
-        }
-    };
-
-    /**
-     * CvCameraViewListener2 Interface
-     */
-
-    public void onCameraViewStarted(int width, int height) {
-    }
-
-    public void onCameraViewStopped() {
-    }
-
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat flippedFrame = inputFrame.rgba();
-        Core.flip(inputFrame.rgba(),flippedFrame, -1);
-
-        return processFrame(inputFrame.gray(), flippedFrame);
-    }
-
     public void infoButtonPressed(View v)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -778,25 +483,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.show();
     }
 
-    /*public void pickupButtonPressed(View v)
-    {
-        mSoccerGame.setPickupButtonPressedTrue();
-
-        mTimeWithoutMovingCountdown = 0;
-
-        Toast toast = Toast.makeText(getApplicationContext(), "-1 Point!", Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.CENTER, 0, 0);
-        toast.show();
-    }*/
-
-    public void scanWholeViewForEuglena()
-    {
-        mROI.x = mSoccerGame.getFieldWidth()/4;
-        mROI.y = mSoccerGame.getFieldHeight()/4;
-        mROI.width = mSoccerGame.getFieldWidth()/2;
-        mROI.height = mSoccerGame.getFieldHeight()/2;
-    }
-
     public void blinkingArrow(Mat img)
     {
         if (!mDrawBlinkingArrow)
@@ -804,6 +490,8 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
             return;
         }
 
+        // TODO: It's not clear what this if statement is trying to accomplish. Needs a refactor or
+        // a comment.
         if((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
             Scalar color;
             SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
@@ -863,7 +551,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         }
     }
 
-    public void showWinner()
+    public void onGameOver()
     {
         runOnUiThread(new Runnable() {
             @Override
@@ -925,7 +613,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         mDrawDirection = mTutorial.shouldDrawDirection();
         mTracking = mTutorial.shouldTrack();
         mDrawGoals = mTutorial.shouldDrawGoals();
-        mDrawCentroids = mTutorial.shouldDrawCentroids();
         mDrawBlinkingArrow = mTutorial.shouldDrawBlinkingArrow();
         mCountingDown = mTutorial.shouldCountDown();
         if (mCountingDown)
@@ -1019,19 +706,6 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
     }
-
-    public void scanDoubleROI(){
-        Point ballLocation = mSoccerGame.getBallLocation();
-        int ballRadius = mSoccerGame.getBallRadius();
-
-        mROI.x = Math.max((int) ballLocation.x - ballRadius *2, 0);
-        mROI.y = Math.max((int) ballLocation.y - ballRadius *2, 0);
-        mROI.width = Math.min(ballRadius * 4, mSoccerGame.getFieldWidth() - mROI.x);
-        mROI.height = Math.min(ballRadius * 4, mSoccerGame.getFieldHeight() - mROI.y);
-    }
-
-
-    /** End CvCameraViewListener2 */
 }
 
 /* to turn off autofocus:

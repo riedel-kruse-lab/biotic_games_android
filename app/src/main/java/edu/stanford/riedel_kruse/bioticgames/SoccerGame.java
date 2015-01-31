@@ -1,7 +1,5 @@
 package edu.stanford.riedel_kruse.bioticgames;
 
-import android.util.Log;
-
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
@@ -17,6 +15,7 @@ public class SoccerGame
     public static final int DEFAULT_BALL_RADIUS = 50;
     public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
+
     /**
      * How close the ball has to be to the edge of the screen to be considered out of bounds.
      * Required because the ball cannot technically actually leave the screen.
@@ -24,11 +23,12 @@ public class SoccerGame
     public static final int BOUNDS_BUFFER = 10;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 20;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY = 30;
-    public static final double FRAMES_PER_PASS = 20;
-    public static final double PASS_DISTANCE = 500;
+    public static final long MILLISECONDS_PER_PASS = 3 * 1000;
+    // TODO: Need to play with this value to see what feels right.
+    public static final double PASS_VELOCITY = 1;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
-    public static final int NUM_TURNS = 6;
+    public static final int NUM_TURNS_PER_GAME = 6;
     public static final double VELOCITY_SCALE = 10;
 
     public enum Turn
@@ -47,16 +47,17 @@ public class SoccerGame
     private int mBluePlayerPoints;
     private Turn mCurrentTurn;
     private boolean mPassing;
-    private int mPassingFrames;
+    private long mPassingTime;
     private long mTimeLeftInTurn;
     private int pointsScored;
     private boolean pickupButtonPressed = false;
-    private int turnCount = 0;
+    private int mTurnCount = 0;
     private double velocity = 0;
     private double mMaxBlueVelocity = 0;
     private double mMaxRedVelocity = 0;
     private Point mVelocityVector = new Point (0,0);
     private boolean mCountdownPaused;
+    private boolean mGameOver;
 
     private SoccerGameDelegate mDelegate;
 
@@ -89,11 +90,12 @@ public class SoccerGame
         mBallRadius = DEFAULT_BALL_RADIUS;
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
-        turnCount = 0;
+        mTurnCount = 0;
         if(mCurrentTurn != Turn.RED)
         {
             changeTurn();
         }
+        // TODO: This is pretty hacky
         else
         {
             changeTurn();
@@ -107,6 +109,8 @@ public class SoccerGame
         mRedGoal.y = mBlueGoal.y = (mFieldHeight - DEFAULT_GOAL_HEIGHT) / 2;
         mRedGoal.width = mBlueGoal.width = DEFAULT_GOAL_WIDTH;
         mRedGoal.height = mBlueGoal.height = DEFAULT_GOAL_HEIGHT;
+
+        mGameOver = false;
     }
 
     public void passBall()
@@ -118,42 +122,7 @@ public class SoccerGame
         }
         velocity = 0;
         mPassing = true;
-        mPassingFrames = 0;
-    }
-
-    public void passingFrame(long timeDelta)
-    {
-
-        //if you want the timer to stop when passing, delete
-        if (!mCountdownPaused)
-        {
-            mTimeLeftInTurn -= timeDelta;
-        }
-
-        // If the time in the turn ran out, give control to the other player.
-        if (mTimeLeftInTurn <= 0)
-        {
-            changeTurn();
-        }
-
-        if (mPassingFrames >= FRAMES_PER_PASS)
-        {
-            mPassing = false;
-            mPassingFrames = 0;
-            // Just finished passing, so we should clear all data about the movement direction.
-            // Otherwise the player will be able to spam the pass button and continuously pass in
-            // the same direction.
-            resetPassingDirection();
-            return;
-        }
-
-        Point newLocation = new Point(mBallLocation.x + ((float) PASS_DISTANCE / FRAMES_PER_PASS) *
-                mPassingDirection.x, mBallLocation.y + ((float) PASS_DISTANCE / FRAMES_PER_PASS) *
-                mPassingDirection.y);
-
-        mPassingFrames++;
-
-        updateBallLocation(newLocation, timeDelta);
+        mPassingTime = 0;
     }
 
     public Point getBallLocation()
@@ -206,6 +175,10 @@ public class SoccerGame
         return mPassing;
     }
 
+    public boolean isGameOver() {
+        return mGameOver;
+    }
+
     /**
      * Resets the ball by settings its location to the center of the field, clearing the movement
      * direction, and clearing all previously stored ball locations.
@@ -224,29 +197,24 @@ public class SoccerGame
         mPassingDirection.y = 0;
     }
 
+    public void updateTime(long timeDelta) {
+        if (!mCountdownPaused) {
+            mTimeLeftInTurn -= timeDelta;
+        }
+
+        if (mTimeLeftInTurn <= 0) {
+            changeTurn();
+        }
+    }
+
     /**
      * Updates the internal state of the soccer game with a new location for the ball.
      * @param newLocation The new location of the ball.
      */
-    public void updateBallLocation(Point newLocation, long timeDelta)
-    {
+    public void updateBallLocation(Point newLocation) {
         checkIfPickupButtonPressed();
 
-        if (newLocation == null)
-        {
-            //if you want the timer to stop when the ball is stagnant, delete
-
-            if (!mCountdownPaused)
-            {
-                mTimeLeftInTurn -= timeDelta;
-            }
-
-            // If the time in the turn ran out, give control to the other player.
-            if (mTimeLeftInTurn <= 0)
-            {
-                changeTurn();
-            }
-
+        if (newLocation == null) {
             mVelocityVector = new Point (0,0);
             velocity = 0;
 
@@ -254,13 +222,37 @@ public class SoccerGame
         }
 
         mBallLocation = newLocation;
+        updatePassingDirection();
+        updateVelocity();
+    }
 
+    public void moveBallDuringPass(long timeDelta) {
+        // Using constant for how fast ball should move when passed, figure out how far ball would
+        // move in the amount of time elapsed in timeDelta
+        // Then move the ball that distance.
 
-        // Otherwise if a goal is scored.
+        double distance = PASS_VELOCITY * timeDelta;
+
+        // TODO: Check this math. This doesn't look quite right.
+        mBallLocation.x += distance * mPassingDirection.x;
+        mBallLocation.y += distance * mPassingDirection.y;
+
+        // TODO: Ball should move for a certain amount of time each pass. If that much time has
+        // elapsed, stop passing.
+
+        mPassingTime += timeDelta;
+        if (mPassingTime >= MILLISECONDS_PER_PASS) {
+            mPassing = false;
+            mPassingTime = 0;
+            resetPassingDirection();
+        }
+    }
+
+    public void checkCollisions() {
+        // If a goal is scored.
         if (checkForGoal())
         {
             resetBall();
-            //changeTurn();
             return;
         }
 
@@ -276,29 +268,7 @@ public class SoccerGame
             mDelegate.onOutOfBounds();
             resetBall();
             changeTurn();
-            return;
         }
-
-        // If the ball is not being passed, then update the movement direction. We don't want to do
-        // this while the ball is being passed because the ball's direction does not change while it
-        // is being passed.
-        if (!mPassing)
-        {
-            updatePassingDirection();
-        }
-
-        if (!mCountdownPaused)
-        {
-            mTimeLeftInTurn -= timeDelta;
-        }
-
-        // If the time in the turn ran out, give control to the other player.
-        if (mTimeLeftInTurn <= 0)
-        {
-            changeTurn();
-        }
-
-        updateVelocity();
     }
 
     private void bounceOffWalls()
@@ -318,7 +288,18 @@ public class SoccerGame
      */
     private void changeTurn()
     {
-        turnCount++;
+        mTurnCount++;
+
+        // If we've exceeded the number of turns per game, then the game is over! Let the delegate
+        // handle the rest from here, since the delegate will probably want to display things.
+        if(mTurnCount > NUM_TURNS_PER_GAME) {
+            mGameOver = true;
+            // TODO: Maybe need to add some state to show that the game has ended?
+            if (mDelegate != null) {
+                mDelegate.onGameOver();
+            }
+            return;
+        }
 
         mPassing = false;
 
@@ -355,7 +336,7 @@ public class SoccerGame
         {
             if (mBallLocation.inside(mBlueGoal))
             {
-                if(!mPassing)
+                if (!mPassing)
                 {
                     mRedPlayerPoints += NO_PASS_POINTS;
                     pointsScored = NO_PASS_POINTS;
@@ -380,12 +361,12 @@ public class SoccerGame
         {
             if (mBallLocation.inside(mRedGoal))
             {
-                if(pickupButtonPressed)
+                if (pickupButtonPressed)
                 {
                     mBluePlayerPoints -= 1;
                     pickupButtonPressed = false;
                 }
-                if(!mPassing)
+                if (!mPassing)
                 {
                     mBluePlayerPoints += NO_PASS_POINTS;
                     pointsScored = NO_PASS_POINTS;
@@ -535,7 +516,7 @@ public class SoccerGame
 
     public boolean turnCountGreaterThan()
     {
-        if(turnCount > NUM_TURNS)
+        if(mTurnCount > NUM_TURNS_PER_GAME)
         {
             return true;
         }
