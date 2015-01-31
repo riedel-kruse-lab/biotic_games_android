@@ -11,8 +11,7 @@ import edu.stanford.riedel_kruse.bioticgamessdk.MathUtil;
 /**
  * Created by dchiu on 11/8/14.
  */
-public class SoccerGame
-{
+public class SoccerGame {
     public static final long MILLISECONDS_PER_TURN = 30 * 1000;
     public static final int DEFAULT_BALL_RADIUS = 50;
     public static final int DEFAULT_GOAL_WIDTH = 40;
@@ -32,8 +31,7 @@ public class SoccerGame
     public static final int NO_PASS_POINTS = 3;
     public static final int NUM_TURNS_PER_GAME = 6;
 
-    public enum Turn
-    {
+    public enum Turn {
         RED,
         BLUE
     }
@@ -64,8 +62,7 @@ public class SoccerGame
     private Rect mRedGoal;
     private Rect mBlueGoal;
 
-    public SoccerGame(int fieldWidth, int fieldHeight, SoccerGameDelegate delegate)
-    {
+    public SoccerGame(int fieldWidth, int fieldHeight, SoccerGameDelegate delegate) {
         mFieldWidth = fieldWidth;
         mFieldHeight = fieldHeight;
 
@@ -84,20 +81,17 @@ public class SoccerGame
     /**
      * Resets the game state.
      */
-    public void reset()
-    {
+    public void reset() {
         resetBall();
         mBallRadius = DEFAULT_BALL_RADIUS;
         mRedPlayerPoints = 0;
         mBluePlayerPoints = 0;
         mTurnCount = 0;
-        if(mCurrentTurn != Turn.RED)
-        {
+        if (mCurrentTurn != Turn.RED) {
             changeTurn();
         }
         // TODO: This is pretty hacky
-        else
-        {
+        else {
             changeTurn();
             changeTurn();
         }
@@ -113,11 +107,9 @@ public class SoccerGame
         mGameOver = false;
     }
 
-    public void passBall()
-    {
+    public void passBall() {
         // If the ball is already being passed, do nothing.
-        if (mPassing)
-        {
+        if (mPassing) {
             return;
         }
         mSpeed = 0;
@@ -125,53 +117,43 @@ public class SoccerGame
         mPassingTime = 0;
     }
 
-    public Point getBallLocation()
-    {
+    public Point getBallLocation() {
         return mBallLocation.clone();
     }
 
-    public int getBallRadius()
-    {
+    public int getBallRadius() {
         return mBallRadius;
     }
 
-    public int getBluePlayerPoints()
-    {
+    public int getBluePlayerPoints() {
         return mBluePlayerPoints;
     }
 
-    public Turn getCurrentTurn()
-    {
+    public Turn getCurrentTurn() {
         return mCurrentTurn;
     }
 
-    public int getRedPlayerPoints()
-    {
+    public int getRedPlayerPoints() {
         return mRedPlayerPoints;
     }
 
-    public int getFieldWidth()
-    {
+    public int getFieldWidth() {
         return mFieldWidth;
     }
 
-    public int getFieldHeight()
-    {
+    public int getFieldHeight() {
         return mFieldHeight;
     }
 
-    public Point getPassingDirection()
-    {
+    public Point getPassingDirection() {
         return mPassingDirection.clone();
     }
 
-    public long getTimeLeftInTurn()
-    {
+    public long getTimeLeftInTurn() {
         return mTimeLeftInTurn;
     }
 
-    public boolean isPassing()
-    {
+    public boolean isPassing() {
         return mPassing;
     }
 
@@ -183,15 +165,13 @@ public class SoccerGame
      * Resets the ball by settings its location to the center of the field, clearing the movement
      * direction, and clearing all previously stored ball locations.
      */
-    private void resetBall()
-    {
+    private void resetBall() {
         mBallLocation = new Point(mFieldWidth / 2.0, mFieldHeight / 2.0);
         resetPassingDirection();
         mPassing = false;
     }
 
-    private void resetPassingDirection()
-    {
+    private void resetPassingDirection() {
         mPreviousBallLocations.clear();
         mPassingDirection.x = 0;
         mPassingDirection.y = 0;
@@ -209,6 +189,7 @@ public class SoccerGame
 
     /**
      * Updates the internal state of the soccer game with a new location for the ball.
+     *
      * @param newLocation The new location of the ball.
      */
     public void updateBallLocation(Point newLocation) {
@@ -249,8 +230,7 @@ public class SoccerGame
 
     public void checkCollisions() {
         // If a goal is scored.
-        if (checkForGoal())
-        {
+        if (checkForGoal()) {
             resetBall();
             return;
         }
@@ -258,26 +238,19 @@ public class SoccerGame
         boolean outOfBounds = checkForOutOfBounds();
         // If we are in the middle of passing and the ball is out of bounds, then we should bounce
         // off the walls.
-        if (mPassing && outOfBounds)
-        {
+        if (mPassing && outOfBounds) {
             bounceOffWalls();
-        }
-        else if (!mPassing && outOfBounds)
-        {
+        } else if (!mPassing && outOfBounds) {
             mDelegate.onOutOfBounds();
             resetBall();
             changeTurn();
         }
     }
 
-    private void bounceOffWalls()
-    {
-        if (mBallLocation.x < BOUNDS_BUFFER || mBallLocation.x > mFieldWidth - BOUNDS_BUFFER)
-        {
+    private void bounceOffWalls() {
+        if (mBallLocation.x < BOUNDS_BUFFER || mBallLocation.x > mFieldWidth - BOUNDS_BUFFER) {
             mPassingDirection.x *= -1;
-        }
-        else if (mBallLocation.y < BOUNDS_BUFFER || mBallLocation.y > mFieldHeight - BOUNDS_BUFFER)
-        {
+        } else if (mBallLocation.y < BOUNDS_BUFFER || mBallLocation.y > mFieldHeight - BOUNDS_BUFFER) {
             mPassingDirection.y *= -1;
         }
     }
@@ -285,13 +258,12 @@ public class SoccerGame
     /**
      * Changes the turn to the next player.
      */
-    private void changeTurn()
-    {
+    private void changeTurn() {
         mTurnCount++;
 
         // If we've exceeded the number of turns per game, then the game is over! Let the delegate
         // handle the rest from here, since the delegate will probably want to display things.
-        if(mTurnCount > NUM_TURNS_PER_GAME) {
+        if (mTurnCount > NUM_TURNS_PER_GAME) {
             mGameOver = true;
             // TODO: Maybe need to add some state to show that the game has ended?
             if (mDelegate != null) {
@@ -304,50 +276,40 @@ public class SoccerGame
 
         mSpeed = 0;
 
-        if (mCurrentTurn == Turn.RED)
-        {
+        if (mCurrentTurn == Turn.RED) {
             mCurrentTurn = Turn.BLUE;
-        }
-        else
-        {
+        } else {
             mCurrentTurn = Turn.RED;
         }
 
         // Reset the amount of time left in the turn.
         mTimeLeftInTurn = MILLISECONDS_PER_TURN;
 
-        if (mDelegate != null)
-        {
+        if (mDelegate != null) {
             mDelegate.onChangedTurn(mCurrentTurn);
         }
     }
 
     /**
      * Checks to see if the ball is currently inside the goal.
+     *
      * @return true if the ball is currently inside the goal, false otherwise.
      */
-    private boolean checkForGoal()
-    {
+    private boolean checkForGoal() {
         // If it's the red player's turn and the ball is inside the blue goal, then a goal has been
         // scored and the red player gets a point.
-        if (mCurrentTurn == Turn.RED)
-        {
-            if (mBallLocation.inside(mBlueGoal))
-            {
-                if (!mPassing)
-                {
+        if (mCurrentTurn == Turn.RED) {
+            if (mBallLocation.inside(mBlueGoal)) {
+                if (!mPassing) {
                     mRedPlayerPoints += NO_PASS_POINTS;
                     pointsScored = NO_PASS_POINTS;
-                }
-                else
-                {
+                } else {
                     mRedPlayerPoints++;
                     pointsScored = 1;
                 }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
-                if (mDelegate != null)
-                {
+                if (mDelegate != null) {
                     mDelegate.onGoalScored(Turn.RED);
                 }
                 return true;
@@ -355,29 +317,22 @@ public class SoccerGame
         }
         // Otherwise, if it's the blue player's turn and the ball is inside the red goal, then a
         // goal has been scored and the blue player gets a point.
-        else
-        {
-            if (mBallLocation.inside(mRedGoal))
-            {
-                if (pickupButtonPressed)
-                {
+        else {
+            if (mBallLocation.inside(mRedGoal)) {
+                if (pickupButtonPressed) {
                     mBluePlayerPoints -= 1;
                     pickupButtonPressed = false;
                 }
-                if (!mPassing)
-                {
+                if (!mPassing) {
                     mBluePlayerPoints += NO_PASS_POINTS;
                     pointsScored = NO_PASS_POINTS;
-                }
-                else
-                {
+                } else {
                     mBluePlayerPoints++;
                     pointsScored = 1;
                 }
                 // If there is a delegate, let the delegate know that a goal was scored so it can do
                 // whatever else it wants (e.g. display a notification).
-                if (mDelegate != null)
-                {
+                if (mDelegate != null) {
                     mDelegate.onGoalScored(Turn.BLUE);
                 }
                 return true;
@@ -389,14 +344,13 @@ public class SoccerGame
 
     /**
      * Checks to see if the ball is currently out of bounds.
+     *
      * @return true if the ball is out of bounds, false otherwise.
      */
-    private boolean checkForOutOfBounds()
-    {
+    private boolean checkForOutOfBounds() {
         if (mBallLocation.x <= BOUNDS_BUFFER || mBallLocation.y <= BOUNDS_BUFFER ||
                 mBallLocation.x >= mFieldWidth - BOUNDS_BUFFER ||
-                mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER)
-        {
+                mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER) {
             return true;
         }
 
@@ -407,16 +361,14 @@ public class SoccerGame
      * Recomputes the movement direction of the ball using an average of the previous known
      * locations of the ball.
      */
-    private void updatePassingDirection()
-    {
+    private void updatePassingDirection() {
         // Add the current location to the previous locations list so it can be used for finding
         // the movement direction of the ball.
         mPreviousBallLocations.add(mBallLocation);
 
         // If the number of stored previous locations has exceeded the defined limit, remove the
         // oldest previous location.
-        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK)
-        {
+        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK) {
             mPreviousBallLocations.remove(0);
         }
 
@@ -427,31 +379,23 @@ public class SoccerGame
         }
     }
 
-    public int getPointsScored()
-    {
-       return pointsScored;
+    public int getPointsScored() {
+        return pointsScored;
     }
 
-    private void checkIfPickupButtonPressed()
-    {
-        if(pickupButtonPressed)
-        {
+    private void checkIfPickupButtonPressed() {
+        if (pickupButtonPressed) {
 
-            if(mCurrentTurn == Turn.RED)
-            {
+            if (mCurrentTurn == Turn.RED) {
                 mRedPlayerPoints -= 1;
                 pointsScored = -1;
-                if (mDelegate != null)
-                {
+                if (mDelegate != null) {
                     mDelegate.onPickupButtonPressed(Turn.RED);
                 }
-            }
-            else
-            {
+            } else {
                 mBluePlayerPoints -= 1;
                 pointsScored = -1;
-                if (mDelegate != null)
-                {
+                if (mDelegate != null) {
                     mDelegate.onPickupButtonPressed(Turn.BLUE);
                 }
             }
@@ -459,59 +403,48 @@ public class SoccerGame
         }
     }
 
-    public void setPickupButtonPressedTrue()
-    {
+    public void setPickupButtonPressedTrue() {
         pickupButtonPressed = true;
     }
 
-    public boolean turnCountGreaterThan()
-    {
-        if(mTurnCount > NUM_TURNS_PER_GAME)
-        {
+    public boolean turnCountGreaterThan() {
+        if (mTurnCount > NUM_TURNS_PER_GAME) {
             return true;
         }
 
         return false;
     }
 
-    public String getWinningPlayer()
-    {
-        if(mRedPlayerPoints>mBluePlayerPoints)
-        {
+    public String getWinningPlayer() {
+        if (mRedPlayerPoints > mBluePlayerPoints) {
             return "Red Player Wins!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n" +
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
                     "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
         }
-        if(mBluePlayerPoints>mRedPlayerPoints)
-        {
+        if (mBluePlayerPoints > mRedPlayerPoints) {
             return "Blue Player Wins!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n" +
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
                     "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
-        }
-        else
-        {
+        } else {
             return "Tie!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n" +
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
                     "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
 
         }
     }
 
-    public Rect returnMBlueGoal()
-    {
+    public Rect returnMBlueGoal() {
         return mBlueGoal;
     }
 
-    public void updateSpeed()
-    {
-        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_SPEED)
-        {
+    public void updateSpeed() {
+        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_SPEED) {
             mPreviousBallLocations.remove(0);
         }
 
@@ -520,43 +453,36 @@ public class SoccerGame
         updateMaxSpeeds();
     }
 
-    private void updateMaxSpeeds()
-    {
-        if (mCurrentTurn == Turn.RED)
-        {
-            if (mMaxRedSpeed < mSpeed && mSpeed <100){
+    private void updateMaxSpeeds() {
+        if (mCurrentTurn == Turn.RED) {
+            if (mMaxRedSpeed < mSpeed && mSpeed < 100) {
                 mMaxRedSpeed = mSpeed;
             }
         }
-        if (mCurrentTurn == Turn.BLUE)
-        {
-            if (mMaxBlueSpeed < mSpeed && mSpeed <100) {
+        if (mCurrentTurn == Turn.BLUE) {
+            if (mMaxBlueSpeed < mSpeed && mSpeed < 100) {
                 mMaxBlueSpeed = mSpeed;
             }
         }
     }
 
-    public double getSpeed()
-    {
+    public double getSpeed() {
         return roundDown2(mSpeed);
     }
 
-    public void pauseCountdown()
-    {
+    public void pauseCountdown() {
         mCountdownPaused = true;
     }
 
-    public void resumeCountdown()
-    {
+    public void resumeCountdown() {
         mCountdownPaused = false;
     }
 
-    public boolean returnCountdownPaused(){
+    public boolean returnCountdownPaused() {
         return mCountdownPaused;
     }
 
-    public static double roundDown2(double d)
-    {
+    public static double roundDown2(double d) {
         return (long) (d * 1e2) / 1e2;
     }
 }
