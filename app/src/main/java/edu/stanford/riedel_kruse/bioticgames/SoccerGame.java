@@ -6,6 +6,8 @@ import org.opencv.core.Rect;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.stanford.riedel_kruse.bioticgamessdk.MathUtil;
+
 /**
  * Created by dchiu on 11/8/14.
  */
@@ -22,14 +24,13 @@ public class SoccerGame
      */
     public static final int BOUNDS_BUFFER = 10;
     public static final int PREVIOUS_LOCATIONS_TO_TRACK = 20;
-    public static final int PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY = 30;
+    public static final int PREVIOUS_LOCATIONS_TO_TRACK_SPEED = 30;
     public static final long MILLISECONDS_PER_PASS = 3 * 1000;
     // TODO: Need to play with this value to see what feels right.
-    public static final double PASS_VELOCITY = 1;
+    public static final double PASS_SPEED = 1;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 3;
     public static final int NUM_TURNS_PER_GAME = 6;
-    public static final double VELOCITY_SCALE = 10;
 
     public enum Turn
     {
@@ -52,10 +53,9 @@ public class SoccerGame
     private int pointsScored;
     private boolean pickupButtonPressed = false;
     private int mTurnCount = 0;
-    private double velocity = 0;
-    private double mMaxBlueVelocity = 0;
-    private double mMaxRedVelocity = 0;
-    private Point mVelocityVector = new Point (0,0);
+    private double mSpeed = 0;
+    private double mMaxBlueSpeed = 0;
+    private double mMaxRedSpeed = 0;
     private boolean mCountdownPaused;
     private boolean mGameOver;
 
@@ -120,7 +120,7 @@ public class SoccerGame
         {
             return;
         }
-        velocity = 0;
+        mSpeed = 0;
         mPassing = true;
         mPassingTime = 0;
     }
@@ -215,15 +215,14 @@ public class SoccerGame
         checkIfPickupButtonPressed();
 
         if (newLocation == null) {
-            mVelocityVector = new Point (0,0);
-            velocity = 0;
+            mSpeed = 0;
 
             return;
         }
 
         mBallLocation = newLocation;
         updatePassingDirection();
-        updateVelocity();
+        updateSpeed();
     }
 
     public void moveBallDuringPass(long timeDelta) {
@@ -231,7 +230,7 @@ public class SoccerGame
         // move in the amount of time elapsed in timeDelta
         // Then move the ball that distance.
 
-        double distance = PASS_VELOCITY * timeDelta;
+        double distance = PASS_SPEED * timeDelta;
 
         // TODO: Check this math. This doesn't look quite right.
         mBallLocation.x += distance * mPassingDirection.x;
@@ -303,8 +302,7 @@ public class SoccerGame
 
         mPassing = false;
 
-        mVelocityVector = new Point (0,0);
-        velocity = 0;
+        mSpeed = 0;
 
         if (mCurrentTurn == Turn.RED)
         {
@@ -408,8 +406,6 @@ public class SoccerGame
     /**
      * Recomputes the movement direction of the ball using an average of the previous known
      * locations of the ball.
-     * TODO: Don't completely recompute the average every time. Use the old average to avoid
-     * needless computation.
      */
     private void updatePassingDirection()
     {
@@ -424,57 +420,11 @@ public class SoccerGame
             mPreviousBallLocations.remove(0);
         }
 
-        int numPreviousLocations = mPreviousBallLocations.size();
-        // If we only have one previous location, then we cannot compute any directions since we
-        // need two points to define a line.
-        if (numPreviousLocations == 1)
-        {
-            return;
+        Point averageDirection = MathUtil.computeAverageDirection(mPreviousBallLocations);
+
+        if (averageDirection != null) {
+            mPassingDirection = averageDirection;
         }
-
-        ArrayList<Point> directionVectors = new ArrayList<Point>();
-
-        // Compute the directions pairwise between the previous locations of the ball
-        for (int i = 0; i < numPreviousLocations - 1; i++)
-        {
-            Point previousPoint = mPreviousBallLocations.get(i);
-            Point nextPoint = mPreviousBallLocations.get(i + 1);
-            Point directionVector = new Point(nextPoint.x - previousPoint.x,
-                    nextPoint.y - previousPoint.y);
-
-            double magnitude = Math.sqrt(Math.pow(directionVector.x, 2) +
-                    Math.pow(directionVector.y, 2));
-
-            // Normalize the direction vector to get a unit vector in that direction
-            directionVector.x = directionVector.x / magnitude;
-            directionVector.y = directionVector.y / magnitude;
-
-            directionVectors.add(directionVector);
-        }
-
-        // Reset the passing direction.
-        mPassingDirection.x = 0;
-        mPassingDirection.y = 0;
-
-        double numDirectionVectors = directionVectors.size();
-
-        // Sum up all of the direction vectors
-        for (Point directionVector : directionVectors)
-        {
-            mPassingDirection.x += directionVector.x;
-            mPassingDirection.y += directionVector.y;
-        }
-
-        // Divide to compute an average.
-        mPassingDirection.x /= numDirectionVectors;
-        mPassingDirection.y /= numDirectionVectors;
-
-        double directionMagnitude = Math.sqrt(Math.pow(mPassingDirection.x, 2) +
-                Math.pow(mPassingDirection.y, 2));
-
-        // Normalize the direction so that it is just a unit vector.
-        mPassingDirection.x /= directionMagnitude;
-        mPassingDirection.y /= directionMagnitude;
     }
 
     public int getPointsScored()
@@ -530,25 +480,25 @@ public class SoccerGame
         {
             return "Red Player Wins!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
+                    "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
         }
         if(mBluePlayerPoints>mRedPlayerPoints)
         {
             return "Blue Player Wins!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
+                    "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
         }
         else
         {
             return "Tie!\n\n" +
                     "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
+                    "\n   Max Speed: " + roundDown2(mMaxRedSpeed) + " um/s\n\n"+
                     "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
+                    "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
 
         }
     }
@@ -558,66 +508,37 @@ public class SoccerGame
         return mBlueGoal;
     }
 
-    public void updateVelocity()
+    public void updateSpeed()
     {
-        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY)
+        if (mPreviousBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_SPEED)
         {
             mPreviousBallLocations.remove(0);
         }
 
-        int numPreviousLocations = mPreviousBallLocations.size();
-        // If we only have one previous location, then we cannot compute any directions since we
-        // need two points to define a line.
-        if (numPreviousLocations == 1)
-        {
-            return;
-        }
+        mSpeed = MathUtil.computeAverageSpeed(mPreviousBallLocations);
 
-
-        for (int i = 0; i < numPreviousLocations - 1; i++)
-        {
-            Point previousPoint = mPreviousBallLocations.get(i);
-            Point nextPoint = mPreviousBallLocations.get(i + 1);
-            Point directionVector = new Point(nextPoint.x - previousPoint.x,
-                    nextPoint.y - previousPoint.y);
-
-            mVelocityVector = new Point(mVelocityVector.x + directionVector.x, mVelocityVector.y + directionVector.y);
-        }
-
-        mVelocityVector = new Point(mVelocityVector.x/numPreviousLocations, mVelocityVector.y/numPreviousLocations);
-        velocity = VELOCITY_SCALE * (Math.sqrt(Math.pow(mVelocityVector.x, 2) +
-                Math.pow(mVelocityVector.y, 2)));
-
-        updateMaxVelocities();
+        updateMaxSpeeds();
     }
 
-    private void updateMaxVelocities()
+    private void updateMaxSpeeds()
     {
-        if(mCurrentTurn == Turn.RED)
+        if (mCurrentTurn == Turn.RED)
         {
-            if(mMaxRedVelocity<velocity&&velocity<100){
-                mMaxRedVelocity = velocity;
+            if (mMaxRedSpeed < mSpeed && mSpeed <100){
+                mMaxRedSpeed = mSpeed;
             }
         }
-        if(mCurrentTurn == Turn.BLUE)
+        if (mCurrentTurn == Turn.BLUE)
         {
-            if(mMaxBlueVelocity<velocity&&velocity<100){
-                mMaxBlueVelocity=velocity;
+            if (mMaxBlueSpeed < mSpeed && mSpeed <100) {
+                mMaxBlueSpeed = mSpeed;
             }
         }
     }
 
-    public double getVelocity()
+    public double getSpeed()
     {
-        return roundDown2(velocity);
-    }
-
-    public double getMaxBlueVelocity(){
-        return mMaxBlueVelocity;
-    }
-
-    public double getMaxRedVelocity(){
-        return mMaxRedVelocity;
+        return roundDown2(mSpeed);
     }
 
     public void pauseCountdown()
