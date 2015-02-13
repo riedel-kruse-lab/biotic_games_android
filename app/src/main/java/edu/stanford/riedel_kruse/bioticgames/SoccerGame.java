@@ -32,9 +32,9 @@ public class SoccerGame
     public static final double FRAMES_PER_PASS = 20;
     public static final double PASS_DISTANCE = 500;
     public static final double FRAMES_PER_BOUNCE = 10;
-    public static final double BOUNCE_DISTANCE = 1500;
+    public static final double BOUNCE_DISTANCE = 300;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
-    public static final int NO_PASS_POINTS = 3;
+    public static final int NO_PASS_POINTS = 2;
     public static final int NUM_TURNS = 6;
     public static final double VELOCITY_SCALE = 15;
     public boolean mSoundIsBounced = false;
@@ -811,5 +811,7 @@ public class SoccerGame
         mIsBouncing = true;
         mBouncingFrames = 0;
         mBouncingDirection = new Point(Math.random()-0.5, Math.random()-0.5);
+        double bounceMagnitude = Math.sqrt(Math.pow(mBouncingDirection.x,2) + Math.pow(mBouncingDirection.y,2));
+        mBouncingDirection = new Point(mBouncingDirection.x/bounceMagnitude, mBouncingDirection.y/bounceMagnitude);
     }
 }

@@ -16,11 +16,12 @@ public class Tutorial
             R.string.tutorial_out_of_bounds,
             R.string.tutorial_tap_to_pass,
             R.string.tutorial_pass_tip,
-            R.string.tutorial_play_around,
-            R.string.tutorial_try_for_goal, // Index 10
+            R.string.tutorial_bounce_tip,
+            R.string.tutorial_play_around, // Index 10
+            R.string.tutorial_try_for_goal,
             R.string.tutorial_goal_carry_or_pass,
             R.string.tutorial_score,
-            R.string.tutorial_turns, // Index 13
+            R.string.tutorial_turns, // Index 14
             R.string.tutorial_play_around
         };
 
@@ -67,7 +68,7 @@ public class Tutorial
 
     public boolean shouldDrawGoals()
     {
-        return mCurrentIndex > 9 || finished();
+        return mCurrentIndex > 10 || finished();
     }
 
     public boolean shouldDrawCentroids()
@@ -87,7 +88,7 @@ public class Tutorial
 
     public boolean shouldDrawBlinkingArrow()
     {
-        return mCurrentIndex > 9 || finished();
+        return mCurrentIndex > 10 || finished();
     }
 
     public boolean shouldDisplayVelocity()
@@ -102,16 +103,18 @@ public class Tutorial
 
     public boolean shouldDisplayCountdown()
     {
-        return mCurrentIndex > 12 || finished();
+        return mCurrentIndex > 13 || finished();
     }
 
     public boolean shouldDisplayScores()
     {
-        return mCurrentIndex > 9 || finished();
+        return mCurrentIndex > 10 || finished();
     }
 
     public boolean shouldCountDown()
     {
-        return mCurrentIndex > 12 || finished();
+        return mCurrentIndex > 13 || finished();
     }
+
+    public boolean shouldDisplayPassAndBounce(){return mCurrentIndex > 6 || finished(); }
 }

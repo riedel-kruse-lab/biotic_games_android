@@ -80,26 +80,28 @@
 
         <LinearLayout
             android:orientation="vertical"
-            android:layout_width="150dp"
+            android:layout_width="fill_parent"
             android:layout_height="fill_parent">
             <RelativeLayout
                 android:id="@+id/zoomView"
-                android:layout_width="wrap_content"
-                android:layout_height="150dp" >
+                android:layout_width="fill_parent"
+                android:layout_height="150dp"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center_horizontal">
             </RelativeLayout>
 
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
+                android:layout_height="fill_parent"
                 android:gravity="center"
                 android:visibility="gone"
                 android:id="@+id/tutorialLayout">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:id="@+id/tutorialText" />
+                    android:id="@+id/tutorialText"
+                    android:gravity="center_horizontal" />
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -155,7 +157,7 @@
         android:layout_height="35dp"
         android:layout_alignParentBottom="true">
         <Button
-            android:layout_width="225dp"
+            android:layout_width="325dp"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:soundEffectsEnabled="false"
@@ -165,7 +167,7 @@
             android:clickable="true"
             android:onClick="passButtonPressed" />
         <Button
-            android:layout_width="225dp"
+            android:layout_width="125dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:textSize="17sp"

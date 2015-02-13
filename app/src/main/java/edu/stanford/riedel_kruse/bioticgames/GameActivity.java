@@ -74,6 +74,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     private boolean mDisplayVelocity;
     private boolean mDrawBlinkingArrow;
     private boolean mCountingDown;
+    private boolean mDisplayPassAndBounce;
 
     private SoccerGame mSoccerGame;
 
@@ -363,6 +364,9 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public void onGoalScored(final SoccerGame.Turn currentTurn)
     {
+        if(!mDrawGoals){
+            return;
+        }
         mSoundGoalScored = true;
 
         mGoalScored = true;
@@ -796,6 +800,10 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if(mTutorialMode && !mDisplayPassAndBounce){
+            return super.onTouchEvent(event);
+        }
+
         //Tapped = true;
         tapX = event.getX();
         tapY = event.getY();
@@ -831,7 +839,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Instructions");
         builder.setMessage("Try to score the ball into the other player's goal to win! " +
-                "You get 3 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
+                "You get 2 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
                 "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
                 "When time runs out, there is a short pause to hand off the controller to the other player."
         );
@@ -899,7 +907,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Credits");
-        builder.setMessage("Honesty Kim: etc\nDaniel Chiu: Programming\n" +
+        builder.setMessage("Honesty Kim: Messing Things Up\nDaniel Chiu: Programming\n" +
                 "Seung Ah Lee: Optics\nAlice Chung: Euglena Biology\nSherwin Xia: Electronics\n" +
                         "Lukas Gerber: Sticker Microfluidics\nNate Cira: Microfluidics\n"+
                 "Ingmar Riedel-Kruse: Advisor"
@@ -972,7 +980,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
         builder.setMessage("If there are no Euglena in the field of view, try moving the stage around, flushing " +
                 "the syringe, or adjusting the focusing knob.\n\n" + "If the Euglena aren't moving the way you " +
                         "expect them to (i.e. sluggish), keep in mind these are real living organisms! They may " +
-                        "be off their circadian rhythms or may need be tired."
+                        "be off their circadian rhythms or may just be tired."
         );
         builder.setCancelable(false);
         builder.setPositiveButton("Everything makes sense now!", new DialogInterface.OnClickListener() {
@@ -1054,7 +1062,7 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         TextView tutorialTextView = (TextView) findViewById(R.id.tutorialText);
         tutorialTextView.setText(mTutorial.getCurrentStringResource());
-        tutorialTextView.setTextSize(20);
+        tutorialTextView.setTextSize(18);
         mDrawBall = mTutorial.shouldDrawBall();
         mDrawDirection = mTutorial.shouldDrawDirection();
         mTracking = mTutorial.shouldTrack();
@@ -1120,6 +1128,26 @@ public class GameActivity extends Activity implements CameraBridgeViewBase.CvCam
 
                 button.setText(mTutorial.getButtonTextResource());
             }
+        });
+
+        mDisplayPassAndBounce = mTutorial.shouldDisplayPassAndBounce();
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Button button = (Button) findViewById(R.id.passButton);
+                Button button1 = (Button) findViewById(R.id.pickupButton);
+
+                if (mDisplayPassAndBounce)
+                {
+                    button.setVisibility(View.VISIBLE);
+                    button1.setVisibility(View.VISIBLE);
+                }
+                else
+                {
+                    button.setVisibility(View.INVISIBLE);
+                    button1.setVisibility(View.INVISIBLE);
+                }}
         });
     }
 
