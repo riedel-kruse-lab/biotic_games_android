@@ -173,7 +173,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
-
     }
 
     @Override
@@ -244,33 +243,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 toast.show();
             }
         });
-    }
-
-    private void reduceNoise(Mat mat) {
-        Size size = new Size(5, 5);
-        Mat structuringElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, size);
-
-        Imgproc.dilate(mat, mat, structuringElement);
-        Imgproc.erode(mat, mat, structuringElement);
-
-        Imgproc.erode(mat, mat, structuringElement);
-        Imgproc.dilate(mat, mat, structuringElement);
-    }
-
-    private void findContours(Mat img) {
-        mContours.clear();
-        Mat hierarchy = new Mat();
-        Imgproc.findContours(img, mContours, hierarchy, Imgproc.RETR_TREE,
-                Imgproc.CHAIN_APPROX_SIMPLE);
-    }
-
-    private void findContourCentroids() {
-        mCentroids.clear();
-        for (MatOfPoint contour : mContours) {
-            Moments p = Imgproc.moments(contour, false);
-            Point centroid = new Point(p.get_m10() / p.get_m00(), p.get_m01() / p.get_m00());
-            mCentroids.add(centroid);
-        }
     }
 
     private void drawBall(Mat img)
@@ -410,8 +382,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         Point endPoint = new Point(ballLocation.x, ballLocation.y);
         endPoint.x += passingDirection.x;
         endPoint.y += passingDirection.y;
-
-        //Core.line(img, ballLocation, endPoint, new Scalar(0, 255, 0), 3);
 
         drawSoccerBall(img, endPoint);
     }
@@ -553,11 +523,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 }
             }
 
-
             blinkingArrow(frame);
         }
 
-        //drawBall(frameRgba);
         drawGoals(frame);
         drawBallBlinker(frame);
         setPassingDirection(frame);
@@ -859,59 +827,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         startActivity(intent);
     }
 
-    public Mat overlayImage(Mat background, Mat foreground)//, Point location)
-    {
-        Mat mask = new Mat();
-        Imgproc.resize(mCurrentMask, mask, background.size());
-
-        Mat source = new Mat();
-        Imgproc.resize(foreground, source, background.size());
-
-        source.copyTo(background,mask);
-        source.release();
-        mask.release();
-        return background;
-    }
-
-    public void createMask (Mat sprite){
-        mCurrentMask = new Mat(sprite.width(),sprite.height(),24);
-        double f[] = {1,1,1,0};
-        double e[] = {0,0,0,0};
-        for(int y = 0; y < (int)(sprite.rows()) ; ++y)
-        {
-            for(int x = 0; x < (int)(sprite.cols()) ; ++x)
-            {
-                double info[] = sprite.get(y, x);
-                if(info[3]>0) //rude but this is what I need
-                {
-                    mCurrentMask.put(y, x, f);
-                }
-                else mCurrentMask.put(y, x, e);
-            }
-        }
-    }
-
-    public void overlayImage(Mat background, Mat foreground,Mat output)//, Point location)
-    {
-        background.copyTo(output);
-        Mat dst = new Mat();
-        Imgproc.resize(foreground, dst, background.size());
-        double alpha;
-        // start at row 0/col 0
-        for (int y = 0; y < background.rows(); ++y) {
-            for (int x = 0; x < background.cols(); ++x) {
-                double info[] = dst.get(y, x);
-                alpha = info[3];
-                // and now combine the background and foreground pixel, using the opacity,but only if opacity > 0.
-                if (alpha > 0) //rude but this is what I need
-                {
-                    double infof[] = dst.get(y, x);
-                    output.put(y, x, infof);
-                }
-            }
-        }
-    }
-
     public void drawSoccerBall(Mat img, Point ballCoordinates){
         //first, statically draw a soccer ball
         //Draws filled, white circle
@@ -980,12 +895,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }else if(!mSoccerGame.isBouncing()){
             mBounceSoundPlayed = false;
         }
-
-/*        runOnUiThread(new Runnable() {
-            public void run() {
-                Toast.makeText(getApplicationContext(), "Beep", Toast.LENGTH_SHORT).show();
-            }
-        });*/
     }
 
     public void passButtonPressed(View v){
@@ -996,7 +905,3 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         mSoccerGame.bounceBall();
     }
 }
-
-/* to turn off autofocus:
-http://answers.opencv.org/question/21377/how-turn-off-autofocus-with-camerabridgeviewbase/
- */
