@@ -42,8 +42,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
             "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
-    public static final boolean DEBUG_MODE = true;
-    public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
@@ -65,8 +63,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     private SoccerGame mSoccerGame;
 
-    private ImageView[] mDebugImageViews;
-    private Bitmap mDebugBitmap;
     private List<Point> mCentroids;
     private List<MatOfPoint> mContours;
 
@@ -175,62 +171,14 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        if (DEBUG_MODE) {
-            mDebugImageViews = new ImageView[NUM_DEBUG_VIEWS];
-            createDebugViews(NUM_DEBUG_VIEWS);
-        }
-
         mCentroids = new ArrayList<Point>();
         mContours = new ArrayList<MatOfPoint>();
 
     }
 
-    private void createDebugViews(int numViews) {
-        RelativeLayout layout = (RelativeLayout) findViewById(R.id.zoomView);
-
-        for (int i = 0; i < numViews; i++) {
-            ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT, 1));
-            layout.addView(imageView);
-            mDebugImageViews[i] = imageView;
-        }
-    }
-
     @Override
     protected int getCameraViewResourceId() {
         return R.id.camera_view;
-    }
-
-    private void debugShowMat(Mat mat) {
-        debugShowMat(mat, 0);
-    }
-
-    private void debugShowMat(Mat mat, final int viewIndex) {
-        if (DEBUG_MODE) {
-            int width = mat.cols();
-            int height = mat.rows();
-            if (mDebugBitmap == null) {
-                mDebugBitmap = Bitmap.createBitmap(width, height,
-                        Bitmap.Config.ARGB_8888);
-            }
-
-            if (mDebugBitmap.getWidth() != width) {
-                mDebugBitmap.setWidth(width);
-            }
-
-            if (mDebugBitmap.getHeight() != height) {
-                mDebugBitmap.setHeight(height);
-            }
-
-            Utils.matToBitmap(mat, mDebugBitmap);
-
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    mDebugImageViews[viewIndex].setImageBitmap(mDebugBitmap);
-                }
-            });
-        }
     }
 
     public void onChangedTurn(final SoccerGame.Turn currentTurn)
