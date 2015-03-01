@@ -47,6 +47,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final int SWAP_TIME = 5000;
     public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
+    private Button mPassButton;
+    private Button mBounceButton;
+
     private Tutorial mTutorial;
     private boolean mTutorialMode;
 
@@ -156,6 +159,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         //Hardware buttons setting to adjust the media sound
         this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
+        mPassButton = (Button) findViewById(R.id.passButton);
+        mBounceButton = (Button) findViewById(R.id.bounceButton);
 
         // If we're in tutorial mode, show the tutorial layout.
         if (mTutorialMode) {
@@ -392,6 +397,23 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         });
     }
 
+    private void simulateButtonPress(final Button button) {
+        // Run the button's onClick functionality.
+        button.performClick();
+
+        // Make the button look pressed.
+        button.setPressed(true);
+        button.invalidate();
+
+        // Reset the button to normal after a small delay.
+        button.postDelayed(new Runnable() {
+           public void run() {
+               button.setPressed(false);
+               button.invalidate();
+           }
+        }, 100);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (mTutorialMode && !mDisplayPassAndBounce) {
@@ -399,10 +421,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
 
         if (mSoccerGame.getVelocity() > 0) {
-            mSoccerGame.passBall();
+            simulateButtonPress(mPassButton);
         }
         else {
-            mSoccerGame.bounceBall();
+            simulateButtonPress(mBounceButton);
         }
 
         return super.onTouchEvent(event);
@@ -719,7 +741,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             @Override
             public void run() {
                 Button button = (Button) findViewById(R.id.passButton);
-                Button button1 = (Button) findViewById(R.id.pickupButton);
+                Button button1 = (Button) findViewById(R.id.bounceButton);
 
                 if (mDisplayPassAndBounce) {
                     button.setVisibility(View.VISIBLE);
