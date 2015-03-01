@@ -99,9 +99,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     private final int mFieldOffset = 15;
 
-    public float tapX = 0;
-    public float tapY = 0;
-
     private Mat mCurrentMask;
 
     //below are the variables used in drawing a soccer ball
@@ -401,13 +398,12 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             return super.onTouchEvent(event);
         }
 
-        //Tapped = true;
-        tapX = event.getX();
-        tapY = event.getY();
-
-        Point tappedPoint = new Point(tapX, tapY);
-
-        mSoccerGame.passBall();
+        if (mSoccerGame.getVelocity() > 0) {
+            mSoccerGame.passBall();
+        }
+        else {
+            mSoccerGame.bounceBall();
+        }
 
         return super.onTouchEvent(event);
     }
