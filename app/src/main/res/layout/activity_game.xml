@@ -1,76 +1,77 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:opencv="http://schemas.android.com/apk/res-auto"
+<RelativeLayout
     android:id="@+id/camera_activity_layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".CameraActivity">
 
     <LinearLayout
-        android:orientation="horizontal"
+        android:id="@+id/menuOptionLayout"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/menuOptionLayout">
+        android:orientation="horizontal">
 
         <Button
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Rules"
-            android:typeface="monospace"
             android:id="@+id/instructButton"
-            android:clickable="true"
-            android:onClick="onInstructionsPressed" />
-
-        <Button
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Biotics"
-            android:typeface="monospace"
-            android:id="@+id/infoButton"
             android:clickable="true"
-            android:onClick="infoButtonPressed" />
+            android:onClick="onInstructionsPressed"
+            android:text="Rules"
+            android:typeface="monospace"/>
 
         <Button
+            android:id="@+id/infoButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:onClick="infoButtonPressed"
+            android:text="Biotics"
+            android:typeface="monospace"/>
+
+        <Button
+            android:id="@+id/newGame"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1.25"
+            android:clickable="true"
+            android:onClick="onNewGamePressed"
             android:text="Start!"
             android:textStyle="bold"
             android:typeface="monospace"
-            android:id="@+id/newGame"
-            android:clickable="true"
-            android:onClick="onNewGamePressed"
             />
 
         <Button
+            android:id="@+id/troubleShootButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Problems?"
-            android:id="@+id/troubleShootButton"
             android:clickable="true"
-            android:onClick="troubleShootButtonPressed" />
+            android:onClick="troubleShootButtonPressed"
+            android:text="Problems?"/>
 
         <Button
+            android:id="@+id/creditButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Credits"
-            android:typeface="monospace"
-            android:id="@+id/creditButton"
             android:clickable="true"
-            android:onClick="creditsButtonPressed" />
+            android:onClick="creditsButtonPressed"
+            android:text="Credits"
+            android:typeface="monospace"/>
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:orientation="horizontal"
-        android:layout_below="@id/menuOptionLayout" >
+        android:layout_below="@id/menuOptionLayout"
+        android:orientation="horizontal">
 
         <edu.stanford.riedel_kruse.bioticgames.CameraView
             android:id="@+id/camera_view"
@@ -79,9 +80,10 @@
             opencv:camera_id="any"/>
 
         <LinearLayout
-            android:orientation="vertical"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent">
+            android:layout_height="fill_parent"
+            android:orientation="vertical">
+
             <RelativeLayout
                 android:id="@+id/zoomView"
                 android:layout_width="fill_parent"
@@ -91,26 +93,29 @@
             </RelativeLayout>
 
             <LinearLayout
-                android:orientation="vertical"
+                android:id="@+id/tutorialLayout"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:gravity="center"
-                android:visibility="gone"
-                android:id="@+id/tutorialLayout">
+                android:orientation="vertical"
+                android:visibility="gone">
+
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
                     android:id="@+id/tutorialText"
-                    android:gravity="center_horizontal" />
-                <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"/>
+
+                <Button
                     android:id="@+id/tutorialButton"
-                    android:text="@string/tutorial_button_next"
-                    android:onClick="tutorialButtonPressed" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="tutorialButtonPressed"
+                    android:text="@string/tutorial_button_next"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
+
     <RelativeLayout
         android:id="@+id/scoreBoard"
         android:layout_width="450dp"
@@ -118,63 +123,65 @@
         android:layout_below="@id/menuOptionLayout">
 
         <TextView
+            android:id="@+id/countDown"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
             android:text="Countdown: 0"
             android:textSize="20sp"
-            android:typeface="monospace"
-            android:id="@+id/countDown"
-            android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true" />
+            android:typeface="monospace"/>
 
         <TextView
+            android:id="@+id/rPoints"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
             android:text="0  "
-            android:typeface="monospace"
             android:textColor="#FF4444"
             android:textSize="30sp"
-            android:id="@+id/rPoints"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true" />
+            android:typeface="monospace"/>
 
         <TextView
+            android:id="@+id/bPoints"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="  0"
-            android:textSize="30sp"
-            android:textColor="#33B5E5"
-            android:typeface="monospace"
-            android:id="@+id/bPoints"
-            android:editable="false"
+            android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:layout_alignParentStart="true" />
+            android:editable="false"
+            android:text="  0"
+            android:textColor="#33B5E5"
+            android:textSize="30sp"
+            android:typeface="monospace"/>
     </RelativeLayout>
 
     <RelativeLayout
         android:layout_width="450dp"
         android:layout_height="35dp"
         android:layout_alignParentBottom="true">
+
         <Button
+            android:id="@+id/passButton"
             android:layout_width="325dp"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            android:soundEffectsEnabled="false"
-            android:textSize="17sp"
-            android:text="Pass"
-            android:id="@+id/passButton"
             android:clickable="true"
-            android:onClick="passButtonPressed" />
+            android:onClick="passButtonPressed"
+            android:soundEffectsEnabled="false"
+            android:text="Pass"
+            android:textSize="17sp"/>
+
         <Button
+            android:id="@+id/pickupButton"
             android:layout_width="125dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:textSize="17sp"
-            android:text="Bounce"
-            android:soundEffectsEnabled="false"
-            android:id="@+id/pickupButton"
+            android:clickable="true"
             android:onClick="bounceButtonPressed"
-            android:clickable="true" />
+            android:soundEffectsEnabled="false"
+            android:text="Bounce"
+            android:textSize="17sp"/>
     </RelativeLayout>
 </RelativeLayout>
