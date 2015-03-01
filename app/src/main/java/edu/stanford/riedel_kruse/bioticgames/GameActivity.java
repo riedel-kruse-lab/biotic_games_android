@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -422,7 +423,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             return super.onTouchEvent(event);
         }
 
-        simulateButtonPress(mActionButton);
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                simulateButtonPress(mActionButton);
+        }
 
         return super.onTouchEvent(event);
     }
