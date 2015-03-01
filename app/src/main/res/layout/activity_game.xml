@@ -113,6 +113,33 @@
                     android:onClick="tutorialButtonPressed"
                     android:text="@string/tutorial_button_next"/>
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical"
+                android:gravity="bottom">
+
+                <Button
+                    android:id="@+id/passButton"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:onClick="passButtonPressed"
+                    android:soundEffectsEnabled="false"
+                    android:text="Pass"
+                    android:textSize="17sp"/>
+
+                <Button
+                    android:id="@+id/bounceButton"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:onClick="bounceButtonPressed"
+                    android:soundEffectsEnabled="false"
+                    android:text="Bounce"
+                    android:textSize="17sp"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
@@ -155,33 +182,5 @@
             android:textColor="#33B5E5"
             android:textSize="30sp"
             android:typeface="monospace"/>
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:layout_width="450dp"
-        android:layout_height="35dp"
-        android:layout_alignParentBottom="true">
-
-        <Button
-            android:id="@+id/passButton"
-            android:layout_width="325dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:clickable="true"
-            android:onClick="passButtonPressed"
-            android:soundEffectsEnabled="false"
-            android:text="Pass"
-            android:textSize="17sp"/>
-
-        <Button
-            android:id="@+id/bounceButton"
-            android:layout_width="125dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:clickable="true"
-            android:onClick="bounceButtonPressed"
-            android:soundEffectsEnabled="false"
-            android:text="Bounce"
-            android:textSize="17sp"/>
     </RelativeLayout>
 </RelativeLayout>
