@@ -3,7 +3,6 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
@@ -12,23 +11,16 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +39,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final int SWAP_TIME = 5000;
     public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
-    private Button mPassButton;
-    private Button mBounceButton;
+    private Button mActionButton;
 
     private Tutorial mTutorial;
     private boolean mTutorialMode;
@@ -61,12 +52,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     private boolean mDisplayVelocity;
     private boolean mDrawBlinkingArrow;
     private boolean mCountingDown;
-    private boolean mDisplayPassAndBounce;
+    private boolean mDisplayActionButton;
 
     private SoccerGame mSoccerGame;
-
-    private List<Point> mCentroids;
-    private List<MatOfPoint> mContours;
 
     private boolean mSwapping;
     private long mSwapCountdown;
@@ -159,8 +147,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         //Hardware buttons setting to adjust the media sound
         this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        mPassButton = (Button) findViewById(R.id.passButton);
-        mBounceButton = (Button) findViewById(R.id.bounceButton);
+        mActionButton = (Button) findViewById(R.id.action_button);
 
         // If we're in tutorial mode, show the tutorial layout.
         if (mTutorialMode) {
@@ -170,9 +157,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        mCentroids = new ArrayList<Point>();
-        mContours = new ArrayList<MatOfPoint>();
     }
 
     @Override
@@ -196,6 +180,24 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         mGoalScored = true;
 
         updateScoreViews();
+    }
+
+    public void onNonzeroVelocity() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mActionButton.setText("Pass");
+            }
+        });
+    }
+
+    public void onZeroVelocity() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mActionButton.setText("Bounce");
+            }
+        });
     }
 
     public void displayGoalMessage(Mat img, double time) {
@@ -416,16 +418,11 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (mTutorialMode && !mDisplayPassAndBounce) {
+        if (mTutorialMode && !mDisplayActionButton) {
             return super.onTouchEvent(event);
         }
 
-        if (mSoccerGame.getVelocity() > 0) {
-            simulateButtonPress(mPassButton);
-        }
-        else {
-            simulateButtonPress(mBounceButton);
-        }
+        simulateButtonPress(mActionButton);
 
         return super.onTouchEvent(event);
     }
@@ -735,20 +732,17 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             }
         });
 
-        mDisplayPassAndBounce = mTutorial.shouldDisplayPassAndBounce();
+        mDisplayActionButton = mTutorial.shouldDisplayActionButton();
 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Button button = (Button) findViewById(R.id.passButton);
-                Button button1 = (Button) findViewById(R.id.bounceButton);
+                Button button = (Button) findViewById(R.id.action_button);
 
-                if (mDisplayPassAndBounce) {
+                if (mDisplayActionButton) {
                     button.setVisibility(View.VISIBLE);
-                    button1.setVisibility(View.VISIBLE);
                 } else {
                     button.setVisibility(View.INVISIBLE);
-                    button1.setVisibility(View.INVISIBLE);
                 }
             }
         });
@@ -851,11 +845,12 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    public void passButtonPressed(View v) {
-        mSoccerGame.passBall();
-    }
-
-    public void bounceButtonPressed(View v) {
-        mSoccerGame.bounceBall();
+    public void actionButtonPressed(View v) {
+        if (mSoccerGame.getVelocity() > 0) {
+            mSoccerGame.passBall();
+        }
+        else {
+            mSoccerGame.bounceBall();
+        }
     }
 }

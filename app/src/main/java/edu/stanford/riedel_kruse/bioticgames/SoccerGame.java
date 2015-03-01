@@ -283,6 +283,7 @@ public class SoccerGame
         mVelocityBallLocations.clear();
         mVelocityVector = new Point(0,0);
         velocity = 0;
+        mDelegate.onZeroVelocity();
     }
 
     public void resetBouncingDirection()
@@ -713,6 +714,13 @@ public class SoccerGame
         mVelocityVector = new Point(mVelocityVector.x/numPreviousLocations, mVelocityVector.y/numPreviousLocations);
         velocity = VELOCITY_SCALE * (Math.sqrt(Math.pow(mVelocityVector.x, 2) +
                 Math.pow(mVelocityVector.y, 2)));
+
+        if (velocity > 0) {
+            mDelegate.onNonzeroVelocity();
+        }
+        else {
+            mDelegate.onZeroVelocity();
+        }
 
         updateMaxVelocities();
     }

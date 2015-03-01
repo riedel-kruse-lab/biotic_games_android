@@ -121,21 +121,11 @@
                 android:gravity="bottom">
 
                 <Button
-                    android:id="@+id/passButton"
+                    android:id="@+id/action_button"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:clickable="true"
-                    android:onClick="passButtonPressed"
-                    android:soundEffectsEnabled="false"
-                    android:text="Pass"
-                    android:textSize="17sp"/>
-
-                <Button
-                    android:id="@+id/bounceButton"
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:onClick="bounceButtonPressed"
+                    android:onClick="actionButtonPressed"
                     android:soundEffectsEnabled="false"
                     android:text="Bounce"
                     android:textSize="17sp"/>

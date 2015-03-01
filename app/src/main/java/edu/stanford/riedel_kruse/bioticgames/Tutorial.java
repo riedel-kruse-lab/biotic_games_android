@@ -116,5 +116,5 @@ public class Tutorial
         return mCurrentIndex > 13 || finished();
     }
 
-    public boolean shouldDisplayPassAndBounce(){return mCurrentIndex > 6 || finished(); }
+    public boolean shouldDisplayActionButton(){return mCurrentIndex > 6 || finished(); }
 }
