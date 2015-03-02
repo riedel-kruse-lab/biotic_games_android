@@ -133,6 +133,8 @@
         </LinearLayout>
     </LinearLayout>
 
+
+
     <RelativeLayout
         android:id="@+id/scoreBoard"
         android:layout_width="450dp"
@@ -147,7 +149,8 @@
             android:layout_centerVertical="true"
             android:text="Countdown: 0"
             android:textSize="20sp"
-            android:typeface="monospace"/>
+            android:typeface="monospace"
+            android:visibility="gone"/>
 
         <TextView
             android:id="@+id/rPoints"
@@ -156,7 +159,7 @@
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
-            android:text="0  "
+            android:text="Goals: 0"
             android:textColor="#FF4444"
             android:textSize="30sp"
             android:typeface="monospace"/>
@@ -168,7 +171,7 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:editable="false"
-            android:text="  0"
+            android:text="Time: 0"
             android:textColor="#33B5E5"
             android:textSize="30sp"
             android:typeface="monospace"/>

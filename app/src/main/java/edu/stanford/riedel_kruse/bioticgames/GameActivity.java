@@ -25,6 +25,9 @@ import org.opencv.core.Scalar;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import edu.stanford.riedel_kruse.bioticgamessdk.BioticGameActivity;
 import edu.stanford.riedel_kruse.bioticgamessdk.ImageProcessing;
@@ -42,6 +45,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     private Button mActionButton;
 
+    private long mTime;
+
     private Tutorial mTutorial;
     private boolean mTutorialMode;
 
@@ -56,10 +61,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     private boolean mDisplayActionButton;
 
     private SoccerGame mSoccerGame;
-
-    private boolean mSwapping;
-    private long mSwapCountdown;
-
 
     private Point mGoal1TopLeft;
     private Point mGoal1BottomRight;
@@ -157,6 +158,23 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             updateTutorialViews();
         }
 
+        mTime = 0;
+
+        ScheduledExecutorService scheduledTaskExecutor = Executors.newScheduledThreadPool(1);
+
+        scheduledTaskExecutor.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mTime++;
+                        TextView textView = (TextView) findViewById(R.id.bPoints);
+                        textView.setText("Time: " + mTime);
+                    }
+                });
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -165,11 +183,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         return R.id.camera_view;
     }
 
-    public void onChangedTurn(final SoccerGame.Turn currentTurn) {
-        // TODO: Freeze the game for some time so players can switch without stress.
-        mSwapping = true;
-        mSwapCountdown = SWAP_TIME;
-        updateSwapCountdown();
+    @Override
+    public void onChangedTurn(SoccerGame.Turn currentTurn) {
+
     }
 
     public void onGoalScored(final SoccerGame.Turn currentTurn) {
@@ -386,18 +402,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 countView.setText("Countdown: " + timeLeft);
             }
         });
-
-    }
-
-    private void updateSwapCountdown() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                long timeLeft = mSwapCountdown / 1000;
-                TextView countView = (TextView) findViewById(R.id.countDown);
-                countView.setText("Swap: " + timeLeft);
-            }
-        });
     }
 
     private void simulateButtonPress(final Button button) {
@@ -498,11 +502,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             showWinner();
         }
 
-        if (mSwapping && mCountingDown && !mSoccerGame.returnCountdownPaused()) {
-            mSoccerGame.resetPassingDirection();
-            mSoccerGame.resetBouncingDirection();
-            mSwapCountdown -= timeDelta;
-        } else if (mSoccerGame.isPassing()) {
+        if (mSoccerGame.isPassing()) {
             mSoccerGame.passingFrame(timeDelta);
         } else if (mSoccerGame.isBouncing()) {
             mSoccerGame.bouncingFrame(timeDelta);
@@ -524,14 +524,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         if (mGoalScored) {
             displayGoalMessage(frame, System.currentTimeMillis());
         }
-        if (mSwapping) {
-            updateSwapCountdown();
-            if (mSwapCountdown <= 0) {
-                mSwapping = false;
-            }
-        } else {
-            updateCountdown();
-        }
+        updateCountdown();
 
         displayVelocity(frame);
 
