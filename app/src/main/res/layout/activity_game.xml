@@ -133,8 +133,6 @@
         </LinearLayout>
     </LinearLayout>
 
-
-
     <RelativeLayout
         android:id="@+id/scoreBoard"
         android:layout_width="450dp"
@@ -149,8 +147,7 @@
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:text="Goals: 0"
-            android:textColor="#FF4444"
-            android:textSize="30sp"
+            android:textSize="20sp"
             android:typeface="monospace"/>
 
         <TextView
@@ -159,10 +156,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:editable="false"
             android:text="Time: 0"
-            android:textColor="#33B5E5"
-            android:textSize="30sp"
+            android:textSize="20sp"
             android:typeface="monospace"/>
     </RelativeLayout>
 </RelativeLayout>
