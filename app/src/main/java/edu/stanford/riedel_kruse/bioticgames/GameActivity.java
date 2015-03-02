@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -46,6 +45,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     private Button mActionButton;
 
     private long mTime;
+    private ScheduledExecutorService mScheduledTaskExecutor;
 
     private Tutorial mTutorial;
     private boolean mTutorialMode;
@@ -160,15 +160,15 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         mTime = 0;
 
-        ScheduledExecutorService scheduledTaskExecutor = Executors.newScheduledThreadPool(1);
+        mScheduledTaskExecutor = Executors.newScheduledThreadPool(1);
 
-        scheduledTaskExecutor.scheduleAtFixedRate(new Runnable() {
+        mScheduledTaskExecutor.scheduleAtFixedRate(new Runnable() {
             public void run() {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         mTime++;
-                        TextView textView = (TextView) findViewById(R.id.bPoints);
+                        TextView textView = (TextView) findViewById(R.id.time);
                         textView.setText("Time: " + mTime);
                     }
                 });
@@ -196,7 +196,29 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         mGoalScored = true;
 
-        updateScoreViews();
+        updateScoreView();
+    }
+
+    public void onGameOver() {
+
+        stopTimer();
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(GameActivity.this);
+                builder.setTitle("Game Over!");
+                builder.setCancelable(false);
+                builder.setPositiveButton("Keep playing!", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        mSoccerGame.resumeCountdown();
+                    }
+                });
+                builder.show();
+
+                mSoccerGame.reset();
+            }
+        });
     }
 
     public void onNonzeroVelocity() {
@@ -215,6 +237,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 mActionButton.setText("Bounce");
             }
         });
+    }
+
+    public void stopTimer() {
+        mScheduledTaskExecutor.shutdownNow();
     }
 
     public void displayGoalMessage(Mat img, double time) {
@@ -244,7 +270,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     public void onPickupButtonPressed(final SoccerGame.Turn currentTurn) {
-        updateScoreViews();
+        updateScoreView();
     }
 
     public void onOutOfBounds() {
@@ -393,17 +419,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         drawSoccerBall(img, endPoint);
     }
 
-    private void updateCountdown() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                long timeLeft = mSoccerGame.getTimeLeftInTurn() / 1000;
-                TextView countView = (TextView) findViewById(R.id.countDown);
-                countView.setText("Countdown: " + timeLeft);
-            }
-        });
-    }
-
     private void simulateButtonPress(final Button button) {
         // Run the button's onClick functionality.
         button.performClick();
@@ -435,21 +450,19 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         return super.onTouchEvent(event);
     }
 
-    public void updateScoreViews() {
+    public void updateScoreView() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                TextView textView = (TextView) findViewById(R.id.bPoints);
-                textView.setText("  " + mSoccerGame.getBluePlayerPoints());
-                TextView textView2 = (TextView) findViewById(R.id.rPoints);
-                textView2.setText(mSoccerGame.getRedPlayerPoints() + "  ");
+                TextView scoreText = (TextView) findViewById(R.id.score);
+                scoreText.setText("Score: " + mSoccerGame.getScore());
             }
         });
     }
 
     public void onNewGamePressed(View v) {
         mSoccerGame.reset();
-        updateScoreViews();
+        updateScoreView();
     }
 
     public void onInstructionsPressed(View v) {
@@ -470,7 +483,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     @Override
     protected void initGame(int width, int height) {
-        mSoccerGame = new SoccerGame(width, height, this);
+        mSoccerGame = new SoccerGame(width, height, 5, this);
         if (!mCountingDown) {
             mSoccerGame.pauseCountdown();
         }
@@ -497,11 +510,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     @Override
     protected void updateGame(Mat frame, long timeDelta) {
-        if (mSoccerGame.turnCountGreaterThan()) {
-            mSoccerGame.pauseCountdown();
-            showWinner();
-        }
-
         if (mSoccerGame.isPassing()) {
             mSoccerGame.passingFrame(timeDelta);
         } else if (mSoccerGame.isBouncing()) {
@@ -524,7 +532,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         if (mGoalScored) {
             displayGoalMessage(frame, System.currentTimeMillis());
         }
-        updateCountdown();
 
         displayVelocity(frame);
 
@@ -621,30 +628,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    public void showWinner() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                String msg = mSoccerGame.getWinningPlayer();
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(GameActivity.this);
-                builder.setTitle("Game Over!");
-                builder.setMessage(msg
-                );
-                builder.setCancelable(false);
-                builder.setPositiveButton("Keep playing!", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        mSoccerGame.resumeCountdown();
-                    }
-                });
-                builder.show();
-
-                mSoccerGame.reset();
-                updateScoreViews();
-            }
-        });
-    }
-
     public void displayVelocity(Mat img) {
         if (!mDisplayVelocity) {
             return;
@@ -689,35 +672,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 mSoccerGame.pauseCountdown();
             }
         }
-        final boolean displayScores = mTutorial.shouldDisplayScores();
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView redScore = (TextView) findViewById(R.id.rPoints);
-                TextView blueScore = (TextView) findViewById(R.id.bPoints);
 
-                if (displayScores) {
-                    redScore.setVisibility(View.VISIBLE);
-                    blueScore.setVisibility(View.VISIBLE);
-                } else {
-                    redScore.setVisibility(View.INVISIBLE);
-                    blueScore.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
-        final boolean displayCountdown = mTutorial.shouldDisplayCountdown();
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView countdown = (TextView) findViewById(R.id.countDown);
-
-                if (displayCountdown) {
-                    countdown.setVisibility(View.VISIBLE);
-                } else {
-                    countdown.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
         mDisplayVelocity = mTutorial.shouldDisplayVelocity();
 
         runOnUiThread(new Runnable() {

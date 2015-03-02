@@ -8,7 +8,7 @@ public interface SoccerGameDelegate
     public void onChangedTurn(SoccerGame.Turn currentTurn);
     public void onGoalScored(SoccerGame.Turn currentTurn);
     public void onOutOfBounds();
-    public void onPickupButtonPressed(SoccerGame.Turn currentTurn);
     public void onNonzeroVelocity();
     public void onZeroVelocity();
+    public void onGameOver();
 }

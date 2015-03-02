@@ -56,15 +56,13 @@ public class SoccerGame
     private Point mBallLocation;
     private List<Point> mPreviousBallLocations;
     private Point mPassingDirection;
-    private int mRedPlayerPoints;
-    private int mBluePlayerPoints;
+    private int mScore;
+    private int mWinningScore;
     private Turn mCurrentTurn;
     private boolean mPassing;
     private int mPassingFrames;
     private int mBouncingFrames;
     private long mTimeLeftInTurn;
-    private int pointsScored;
-    private boolean pickupButtonPressed = false;
     private int turnCount = 0;
     private double velocity = 0;
     private double mMaxBlueVelocity = 0;
@@ -83,10 +81,13 @@ public class SoccerGame
     public static MediaPlayer mSoundBounce;
     public static SoundPool mSoundEffects;
 
-    public SoccerGame(int fieldWidth, int fieldHeight, SoccerGameDelegate delegate)
+    public SoccerGame(int fieldWidth, int fieldHeight, int winningScore,
+                      SoccerGameDelegate delegate)
     {
         mFieldWidth = fieldWidth;
         mFieldHeight = fieldHeight;
+
+        mWinningScore = winningScore;
 
         mDelegate = delegate;
 
@@ -108,8 +109,7 @@ public class SoccerGame
     {
         resetBall();
         mBallRadius = DEFAULT_BALL_RADIUS;
-        mRedPlayerPoints = 0;
-        mBluePlayerPoints = 0;
+        mScore = 0;
         turnCount = 0;
         if(mCurrentTurn != Turn.RED)
         {
@@ -223,20 +223,12 @@ public class SoccerGame
         return mBallRadius;
     }
 
-    public int getBluePlayerPoints()
-    {
-        return mBluePlayerPoints;
-    }
-
     public Turn getCurrentTurn()
     {
         return mCurrentTurn;
     }
 
-    public int getRedPlayerPoints()
-    {
-        return mRedPlayerPoints;
-    }
+    public int getScore() { return mScore; }
 
     public int getFieldWidth()
     {
@@ -300,8 +292,6 @@ public class SoccerGame
     {
         mSoundIsBounced = false;
 
-        checkIfPickupButtonPressed();
-
         if (newLocation == null)
         {
             //if you want the timer to stop when the ball is stagnant, delete
@@ -331,6 +321,8 @@ public class SoccerGame
             resetBall();
             return;
         }
+
+        checkForGameOver();
 
         boolean outOfBounds = checkForOutOfBounds();
         boolean bounceBounds = checkForBounceBounds();
@@ -446,11 +438,9 @@ public class SoccerGame
             if (mCurrentTurn == Turn.RED) {
                 if (mBallLocation.inside(mBlueGoal)) {
                     if (!mPassing && !mIsBouncing) {
-                        mRedPlayerPoints += NO_PASS_POINTS;
-                        pointsScored = NO_PASS_POINTS;
+                        mScore += NO_PASS_POINTS;
                     } else {
-                        mRedPlayerPoints++;
-                        pointsScored = 1;
+                        mScore++;
                     }
                     // If there is a delegate, let the delegate know that a goal was scored so it can do
                     // whatever else it wants (e.g. display a notification).
@@ -464,16 +454,10 @@ public class SoccerGame
             // goal has been scored and the blue player gets a point.
             else {
                 if (mBallLocation.inside(mRedGoal)) {
-                    if (pickupButtonPressed) {
-                        mBluePlayerPoints -= 1;
-                        pickupButtonPressed = false;
-                    }
                     if (!mPassing && !mIsBouncing) {
-                        mBluePlayerPoints += NO_PASS_POINTS;
-                        pointsScored = NO_PASS_POINTS;
+                        mScore += NO_PASS_POINTS;
                     } else {
-                        mBluePlayerPoints++;
-                        pointsScored = 1;
+                        mScore++;
                     }
                     // If there is a delegate, let the delegate know that a goal was scored so it can do
                     // whatever else it wants (e.g. display a notification).
@@ -486,6 +470,12 @@ public class SoccerGame
         }
 
         return false;
+    }
+
+    private void checkForGameOver() {
+        if (mScore >= mWinningScore) {
+            mDelegate.onGameOver();
+        }
     }
 
     /**
@@ -598,85 +588,14 @@ public class SoccerGame
         mPassingDirection.y /= directionMagnitude;
     }
 
-    public int getPointsScored()
-    {
-       return pointsScored;
-    }
-
-    private void checkIfPickupButtonPressed()
-    {
-        if(pickupButtonPressed)
-        {
-
-            if(mCurrentTurn == Turn.RED)
-            {
-                mRedPlayerPoints -= 1;
-                pointsScored = -1;
-                if (mDelegate != null)
-                {
-                    mDelegate.onPickupButtonPressed(Turn.RED);
-                }
-            }
-            else
-            {
-                mBluePlayerPoints -= 1;
-                pointsScored = -1;
-                if (mDelegate != null)
-                {
-                    mDelegate.onPickupButtonPressed(Turn.BLUE);
-                }
-            }
-            pickupButtonPressed = false;
-        }
-    }
-
-    public void setPickupButtonPressedTrue()
-    {
-        pickupButtonPressed = true;
-    }
-
     public boolean turnCountGreaterThan()
     {
-        if(turnCount > NUM_TURNS)
+        if (turnCount > NUM_TURNS)
         {
             return true;
         }
 
         return false;
-    }
-
-    public String getWinningPlayer()
-    {
-        if(mRedPlayerPoints>mBluePlayerPoints)
-        {
-            return "Red Player Wins!\n\n" +
-                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
-                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
-        }
-        if(mBluePlayerPoints>mRedPlayerPoints)
-        {
-            return "Blue Player Wins!\n\n" +
-                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
-                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
-        }
-        else
-        {
-            return "Tie!\n\n" +
-                    "Red Player Stats:\n" + "   Points: " + mRedPlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxRedVelocity) + " um/s\n\n"+
-                    "Blue Player Stats:\n" + "   Points: " + mBluePlayerPoints +
-                    "\n   Max Speed: " + roundDown2(mMaxBlueVelocity) + " um/s";
-
-        }
-    }
-
-    public Rect returnMBlueGoal()
-    {
-        return mBlueGoal;
     }
 
     public void updateVelocity()

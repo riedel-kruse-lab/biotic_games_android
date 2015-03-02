@@ -142,18 +142,7 @@
         android:layout_below="@id/menuOptionLayout">
 
         <TextView
-            android:id="@+id/countDown"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:text="Countdown: 0"
-            android:textSize="20sp"
-            android:typeface="monospace"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/rPoints"
+            android:id="@+id/score"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
@@ -165,7 +154,7 @@
             android:typeface="monospace"/>
 
         <TextView
-            android:id="@+id/bPoints"
+            android:id="@+id/time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
