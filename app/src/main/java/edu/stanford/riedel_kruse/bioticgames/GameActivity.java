@@ -184,11 +184,11 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     @Override
-    public void onChangedTurn(SoccerGame.Turn currentTurn) {
+    public void onChangedDirection(SoccerGame.Direction currentDirection) {
 
     }
 
-    public void onGoalScored(final SoccerGame.Turn currentTurn) {
+    public void onGoalScored(final SoccerGame.Direction currentDirection) {
         if (!mDrawGoals) {
             return;
         }
@@ -269,7 +269,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    public void onPickupButtonPressed(final SoccerGame.Turn currentTurn) {
+    public void onPickupButtonPressed(final SoccerGame.Direction currentDirection) {
         updateScoreView();
     }
 
@@ -291,8 +291,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
 
         Scalar color;
-        SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
-        if (currentTurn == SoccerGame.Turn.RED) {
+        SoccerGame.Direction currentDirection = mSoccerGame.getCurrentTurn();
+        if (currentDirection == SoccerGame.Direction.RIGHT) {
             // Red
             color = new Scalar(255, 68, 68);
         } else {
@@ -577,8 +577,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         if ((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
             Scalar color;
-            SoccerGame.Turn currentTurn = mSoccerGame.getCurrentTurn();
-            if (currentTurn == SoccerGame.Turn.RED) {
+            SoccerGame.Direction currentDirection = mSoccerGame.getCurrentTurn();
+            if (currentDirection == SoccerGame.Direction.RIGHT) {
                 // Red
                 color = new Scalar(255, 68, 68);
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);

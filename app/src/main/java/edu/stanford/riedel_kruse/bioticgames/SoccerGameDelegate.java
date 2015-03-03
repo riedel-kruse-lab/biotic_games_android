@@ -5,8 +5,8 @@ package edu.stanford.riedel_kruse.bioticgames;
  */
 public interface SoccerGameDelegate
 {
-    public void onChangedTurn(SoccerGame.Turn currentTurn);
-    public void onGoalScored(SoccerGame.Turn currentTurn);
+    public void onChangedDirection(SoccerGame.Direction currentDirection);
+    public void onGoalScored(SoccerGame.Direction currentDirection);
     public void onOutOfBounds();
     public void onNonzeroVelocity();
     public void onZeroVelocity();

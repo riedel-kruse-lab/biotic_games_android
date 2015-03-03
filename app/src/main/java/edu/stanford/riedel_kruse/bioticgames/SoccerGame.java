@@ -1,9 +1,7 @@
 package edu.stanford.riedel_kruse.bioticgames;
 
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
-import android.util.Log;
 
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -16,7 +14,7 @@ import java.util.List;
  */
 public class SoccerGame
 {
-    public static final long MILLISECONDS_PER_TURN = 30 * 1000;
+    public static final long MILLISECONDS_PER_DIRECTION = 30 * 1000;
     public static final int DEFAULT_BALL_RADIUS = 60;
     public static final int DEFAULT_GOAL_WIDTH = 40;
     public static final int DEFAULT_GOAL_HEIGHT = 400;
@@ -35,7 +33,6 @@ public class SoccerGame
     public static final double BOUNCE_DISTANCE = 300;
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.SoccerGame";
     public static final int NO_PASS_POINTS = 2;
-    public static final int NUM_TURNS = 6;
     public static final double VELOCITY_SCALE = 15;
     public boolean mSoundIsBounced = false;
     public boolean mSoundOutOfBounds = false;
@@ -44,10 +41,10 @@ public class SoccerGame
     public boolean mBouncedOnceX = false;
     public boolean mBouncedOnceY = false;
 
-    public enum Turn
+    public enum Direction
     {
-        RED,
-        BLUE
+        RIGHT,
+        LEFT
     }
 
     private int mFieldWidth;
@@ -58,12 +55,11 @@ public class SoccerGame
     private Point mPassingDirection;
     private int mScore;
     private int mWinningScore;
-    private Turn mCurrentTurn;
+    private Direction mCurrentDirection;
     private boolean mPassing;
     private int mPassingFrames;
     private int mBouncingFrames;
-    private long mTimeLeftInTurn;
-    private int turnCount = 0;
+    private long mTimeLeftInDirection;
     private double velocity = 0;
     private double mMaxBlueVelocity = 0;
     private double mMaxRedVelocity = 0;
@@ -110,17 +106,16 @@ public class SoccerGame
         resetBall();
         mBallRadius = DEFAULT_BALL_RADIUS;
         mScore = 0;
-        turnCount = 0;
-        if(mCurrentTurn != Turn.RED)
+        if(mCurrentDirection != Direction.RIGHT)
         {
-            changeTurn();
+            changeDirection();
         }
         else
         {
-            changeTurn();
-            changeTurn();
+            changeDirection();
+            changeDirection();
         }
-        mTimeLeftInTurn = MILLISECONDS_PER_TURN;
+        mTimeLeftInDirection = MILLISECONDS_PER_DIRECTION;
 
         // Reset the goal locations, heights, and widths.
         mRedGoal.x = GOAL_OFFSET;
@@ -145,17 +140,10 @@ public class SoccerGame
 
     public void passingFrame(long timeDelta)
     {
-
-        //if you want the timer to stop when passing, delete
-        /*if (!mCountdownPaused)
-        {
-            mTimeLeftInTurn -= timeDelta;
-        }*/
-
         // If the time in the turn ran out, give control to the other player.
-        if (mTimeLeftInTurn <= 0)
+        if (mTimeLeftInDirection <= 0)
         {
-            changeTurn();
+            changeDirection();
         }
 
         if (mPassingFrames >= FRAMES_PER_PASS)
@@ -180,17 +168,10 @@ public class SoccerGame
 
     public void bouncingFrame(long timeDelta)
     {
-
-        //if you want the timer to stop when passing, delete
-        /*if (!mCountdownPaused)
-        {
-            mTimeLeftInTurn -= timeDelta;
-        }*/
-
         // If the time in the turn ran out, give control to the other player.
-        if (mTimeLeftInTurn <= 0)
+        if (mTimeLeftInDirection <= 0)
         {
-            changeTurn();
+            changeDirection();
         }
 
         if (mBouncingFrames >= FRAMES_PER_BOUNCE)
@@ -223,9 +204,9 @@ public class SoccerGame
         return mBallRadius;
     }
 
-    public Turn getCurrentTurn()
+    public Direction getCurrentTurn()
     {
-        return mCurrentTurn;
+        return mCurrentDirection;
     }
 
     public int getScore() { return mScore; }
@@ -247,7 +228,7 @@ public class SoccerGame
 
     public long getTimeLeftInTurn()
     {
-        return mTimeLeftInTurn;
+        return mTimeLeftInDirection;
     }
 
     public boolean isPassing()
@@ -298,13 +279,13 @@ public class SoccerGame
 
             if (!mCountdownPaused)
             {
-                mTimeLeftInTurn -= timeDelta;
+                mTimeLeftInDirection -= timeDelta;
             }
 
             // If the time in the turn ran out, give control to the other player.
-            if (mTimeLeftInTurn <= 0)
+            if (mTimeLeftInDirection <= 0)
             {
-                changeTurn();
+                changeDirection();
             }
 
             resetPassingDirection();
@@ -337,7 +318,7 @@ public class SoccerGame
             mSoundOutOfBounds = true;
             mDelegate.onOutOfBounds();
             resetBall();
-            changeTurn();
+            changeDirection();
             return;
         }
         else if(!bounceBounds){
@@ -356,13 +337,13 @@ public class SoccerGame
 
         if (!mCountdownPaused)
         {
-            mTimeLeftInTurn -= timeDelta;
+            mTimeLeftInDirection -= timeDelta;
         }
 
         // If the time in the turn ran out, give control to the other player.
-        if (mTimeLeftInTurn <= 0)
+        if (mTimeLeftInDirection <= 0)
         {
-            changeTurn();
+            changeDirection();
         }
     }
 
@@ -398,31 +379,29 @@ public class SoccerGame
     }
 
     /**
-     * Changes the turn to the next player.
+     * Changes the direction the player needs to go.
      */
-    private void changeTurn()
+    private void changeDirection()
     {
-        turnCount++;
-
         mPassing = false;
         resetPassingDirection();
         resetBouncingDirection();
 
-        if (mCurrentTurn == Turn.RED)
+        if (mCurrentDirection == Direction.RIGHT)
         {
-            mCurrentTurn = Turn.BLUE;
+            mCurrentDirection = Direction.LEFT;
         }
         else
         {
-            mCurrentTurn = Turn.RED;
+            mCurrentDirection = Direction.RIGHT;
         }
 
         // Reset the amount of time left in the turn.
-        mTimeLeftInTurn = MILLISECONDS_PER_TURN;
+        mTimeLeftInDirection = MILLISECONDS_PER_DIRECTION;
 
         if (mDelegate != null)
         {
-            mDelegate.onChangedTurn(mCurrentTurn);
+            mDelegate.onChangedDirection(mCurrentDirection);
         }
     }
 
@@ -435,7 +414,7 @@ public class SoccerGame
         // If it's the red player's turn and the ball is inside the blue goal, then a goal has been
         // scored and the red player gets a point.
         if(!mIsBouncing) {
-            if (mCurrentTurn == Turn.RED) {
+            if (mCurrentDirection == Direction.RIGHT) {
                 if (mBallLocation.inside(mBlueGoal)) {
                     if (!mPassing && !mIsBouncing) {
                         mScore += NO_PASS_POINTS;
@@ -445,7 +424,7 @@ public class SoccerGame
                     // If there is a delegate, let the delegate know that a goal was scored so it can do
                     // whatever else it wants (e.g. display a notification).
                     if (mDelegate != null) {
-                        mDelegate.onGoalScored(Turn.RED);
+                        mDelegate.onGoalScored(Direction.RIGHT);
                     }
                     return true;
                 }
@@ -462,7 +441,7 @@ public class SoccerGame
                     // If there is a delegate, let the delegate know that a goal was scored so it can do
                     // whatever else it wants (e.g. display a notification).
                     if (mDelegate != null) {
-                        mDelegate.onGoalScored(Turn.BLUE);
+                        mDelegate.onGoalScored(Direction.LEFT);
                     }
                     return true;
                 }
@@ -588,16 +567,6 @@ public class SoccerGame
         mPassingDirection.y /= directionMagnitude;
     }
 
-    public boolean turnCountGreaterThan()
-    {
-        if (turnCount > NUM_TURNS)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
     public void updateVelocity()
     {
         if (mVelocityBallLocations.size() > PREVIOUS_LOCATIONS_TO_TRACK_VELOCITY)
@@ -646,13 +615,13 @@ public class SoccerGame
 
     private void updateMaxVelocities()
     {
-        if(mCurrentTurn == Turn.RED)
+        if(mCurrentDirection == Direction.RIGHT)
         {
             if(mMaxRedVelocity<velocity){
                 mMaxRedVelocity = velocity;
             }
         }
-        if(mCurrentTurn == Turn.BLUE)
+        if(mCurrentDirection == Direction.LEFT)
         {
             if(mMaxBlueVelocity<velocity){
                 mMaxBlueVelocity=velocity;
@@ -684,10 +653,6 @@ public class SoccerGame
         mCountdownPaused = false;
     }
 
-    public boolean returnCountdownPaused(){
-        return mCountdownPaused;
-    }
-
     public static double roundDown2(double d)
     {
         return (long) (d * 1e2) / 1e2;
@@ -703,8 +668,6 @@ public class SoccerGame
         }
         return false;
     }
-
-    public void pauseGame(){}
 
     public double calcBallStepDistance(Point prevLoc,Point currentLoc){
         double distance = Math.sqrt(
