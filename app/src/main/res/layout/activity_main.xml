@@ -36,10 +36,43 @@
         android:text="Play"
         android:onClick="startGame"/>
 
-    <Button
+    <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tutorial"
-        android:onClick="startTutorial"/>
+        android:columnCount="2"
+        android:rowCount="2"
+        android:orientation="horizontal">
 
+        <Button
+            android:layout_height="wrap_content"
+            android:layout_columnSpan="1"
+            android:layout_gravity="fill_horizontal"
+            android:text="Tutorial"
+            android:onClick="startTutorial"/>
+
+        <Button
+            android:id="@+id/instructButton"
+            android:layout_height="wrap_content"
+            android:layout_columnSpan="1"
+            android:layout_gravity="fill_horizontal"
+            android:onClick="onInstructionsPressed"
+            android:text="Rules"/>
+
+        <Button
+            android:id="@+id/infoButton"
+            android:layout_height="wrap_content"
+            android:layout_columnSpan="1"
+            android:layout_gravity="fill_horizontal"
+            android:onClick="infoButtonPressed"
+            android:text="Biotics"/>
+
+        <Button
+            android:id="@+id/creditButton"
+            android:layout_height="wrap_content"
+            android:layout_columnSpan="1"
+            android:layout_gravity="fill_horizontal"
+            android:onClick="creditsButtonPressed"
+            android:text="Credits"/>
+
+    </GridLayout>
 </LinearLayout>
