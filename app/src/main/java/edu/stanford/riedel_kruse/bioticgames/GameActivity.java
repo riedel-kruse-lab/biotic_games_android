@@ -3,6 +3,7 @@ package edu.stanford.riedel_kruse.bioticgames;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
@@ -11,10 +12,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -473,7 +476,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
     }
 
-    private Point findClosestEuglenaToBall(Mat frame) {
+    private Rect roiForBall() {
         // Get the model data about the ball.
         Point ballLocation = mSoccerGame.getBallLocation();
         int ballRadius = mSoccerGame.getBallRadius();
@@ -485,6 +488,15 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         roi.width = Math.min(ballRadius * 2, mSoccerGame.getFieldWidth() - roi.x);
         roi.height = Math.min(ballRadius * 2, mSoccerGame.getFieldHeight() - roi.y);
 
+        return roi;
+    }
+
+    private Point findClosestEuglenaToBall(Mat frame) {
+        // Get the model data about the ball.
+        Point ballLocation = mSoccerGame.getBallLocation();
+
+        Rect roi = roiForBall();
+
         // Find all things that look like Euglena in the region of interest.
         List<Point> euglenaLocations = ImageProcessing.findEuglenaInRoi(frame, roi);
 
@@ -492,8 +504,26 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         return MathUtil.findClosestPoint(ballLocation, euglenaLocations);
     }
 
+    private void updateZoomView(Mat frame) {
+        Rect roi = roiForBall();
+
+        Mat zoomMat = new Mat(frame, roi);
+        final Bitmap zoomBitmap = Bitmap.createBitmap(zoomMat.cols(), zoomMat.rows(),
+                Bitmap.Config.ARGB_8888);
+
+        Utils.matToBitmap(zoomMat, zoomBitmap);
+
+        runOnUiThread(new Runnable() {
+            public void run() {
+                ImageView zoomView = (ImageView) findViewById(R.id.zoomView);
+                zoomView.setImageBitmap(zoomBitmap);
+            }
+        });
+    }
+
     @Override
     protected void updateGame(Mat frame, long timeDelta) {
+        updateZoomView(frame);
         if (mSoccerGame.isPassing()) {
             mSoccerGame.passingFrame(timeDelta);
         } else if (mSoccerGame.isBouncing()) {
