@@ -14,15 +14,15 @@ public class Tutorial
             R.string.tutorial_zoom_view,
             R.string.tutorial_direction_tracking, // Index 5
             R.string.tutorial_out_of_bounds,
-            R.string.tutorial_tap_to_pass,
+            R.string.tutorial_tap_to_act1,
+            R.string.tutorial_tap_to_act2,
             R.string.tutorial_pass_tip,
             R.string.tutorial_bounce_tip,
-            R.string.tutorial_play_around, // Index 10
+            R.string.tutorial_play_around, // Index 11
             R.string.tutorial_try_for_goal,
             R.string.tutorial_goal_carry_or_pass,
             R.string.tutorial_score,
-            R.string.tutorial_turns, // Index 14
-            R.string.tutorial_play_around
+            R.string.tutorial_play_around // Index 15
         };
 
     private int mCurrentIndex;
@@ -88,7 +88,7 @@ public class Tutorial
 
     public boolean shouldDrawBlinkingArrow()
     {
-        return mCurrentIndex > 10 || finished();
+        return mCurrentIndex > 11 || finished();
     }
 
     public boolean shouldDisplayVelocity()
@@ -108,7 +108,7 @@ public class Tutorial
 
     public boolean shouldDisplayScores()
     {
-        return mCurrentIndex > 10 || finished();
+        return mCurrentIndex > 11 || finished();
     }
 
     public boolean shouldCountDown()
