@@ -55,7 +55,7 @@ public class SoccerGame
     private Point mPassingDirection;
     private int mScore;
     private int mWinningScore;
-    private Direction mCurrentDirection;
+    private Direction mCurrentFieldDirection;
     private boolean mPassing;
     private int mPassingFrames;
     private int mBouncingFrames;
@@ -106,7 +106,7 @@ public class SoccerGame
         resetBall();
         mBallRadius = DEFAULT_BALL_RADIUS;
         mScore = 0;
-        if(mCurrentDirection != Direction.RIGHT)
+        if(mCurrentFieldDirection != Direction.RIGHT)
         {
             changeDirection();
         }
@@ -204,9 +204,9 @@ public class SoccerGame
         return mBallRadius;
     }
 
-    public Direction getCurrentTurn()
+    public Direction getCurrentFieldDirection()
     {
-        return mCurrentDirection;
+        return mCurrentFieldDirection;
     }
 
     public int getScore() { return mScore; }
@@ -292,8 +292,9 @@ public class SoccerGame
 
             return;
         }
-
-        mBallLocation = newLocation;
+        else {
+            mBallLocation = newLocation;
+        }
 
 
         // Otherwise if a goal is scored.
@@ -387,13 +388,13 @@ public class SoccerGame
         resetPassingDirection();
         resetBouncingDirection();
 
-        if (mCurrentDirection == Direction.RIGHT)
+        if (mCurrentFieldDirection == Direction.RIGHT)
         {
-            mCurrentDirection = Direction.LEFT;
+            mCurrentFieldDirection = Direction.LEFT;
         }
         else
         {
-            mCurrentDirection = Direction.RIGHT;
+            mCurrentFieldDirection = Direction.RIGHT;
         }
 
         // Reset the amount of time left in the turn.
@@ -401,7 +402,7 @@ public class SoccerGame
 
         if (mDelegate != null)
         {
-            mDelegate.onChangedDirection(mCurrentDirection);
+            mDelegate.onChangedDirection(mCurrentFieldDirection);
         }
     }
 
@@ -414,7 +415,7 @@ public class SoccerGame
         // If it's the red player's turn and the ball is inside the blue goal, then a goal has been
         // scored and the red player gets a point.
         if(!mIsBouncing) {
-            if (mCurrentDirection == Direction.RIGHT) {
+            if (mCurrentFieldDirection == Direction.RIGHT) {
                 if (mBallLocation.inside(mBlueGoal)) {
                     if (!mPassing && !mIsBouncing) {
                         mScore += NO_PASS_POINTS;
@@ -615,13 +616,13 @@ public class SoccerGame
 
     private void updateMaxVelocities()
     {
-        if(mCurrentDirection == Direction.RIGHT)
+        if(mCurrentFieldDirection == Direction.RIGHT)
         {
             if(mMaxRedVelocity<velocity){
                 mMaxRedVelocity = velocity;
             }
         }
-        if(mCurrentDirection == Direction.LEFT)
+        if(mCurrentFieldDirection == Direction.LEFT)
         {
             if(mMaxBlueVelocity<velocity){
                 mMaxBlueVelocity=velocity;

@@ -45,6 +45,9 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final int SWAP_TIME = 5000;
     public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
+    public static final Scalar RED = new Scalar(255, 68, 68);
+    public static final Scalar BLUE = new Scalar(51, 181, 229);
+
     private Button mActionButton;
 
     private long mTime;
@@ -294,13 +297,13 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
 
         Scalar color;
-        SoccerGame.Direction currentDirection = mSoccerGame.getCurrentTurn();
+        SoccerGame.Direction currentDirection = mSoccerGame.getCurrentFieldDirection();
         if (currentDirection == SoccerGame.Direction.RIGHT) {
             // Red
-            color = new Scalar(255, 68, 68);
+            color = RED;
         } else {
             // Blue
-            color = new Scalar(51, 181, 229);
+            color = RED;
         }
         Core.circle(img, mSoccerGame.getBallLocation(), mSoccerGame.getBallRadius(), color, 3);
     }
@@ -394,13 +397,16 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             mGoal2RArmBottomRight = new Point(img.cols() - GOAL_WIDTH - mGoalOffset, GOAL_HEIGHT + margin);
         }
 
-        Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, new Scalar(51, 181, 229), -1);
-        Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, new Scalar(51, 181, 229), -1);
-        Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, new Scalar(51, 181, 229), -1);
-
-        Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, new Scalar(255, 68, 68), -1);
-        Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, new Scalar(255, 68, 68), -1);
-        Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, new Scalar(255, 68, 68), -1);
+        if (mSoccerGame.getCurrentFieldDirection() == SoccerGame.Direction.LEFT) {
+            Core.rectangle(img, mGoal1TopLeft, mGoal1BottomRight, RED, -1);
+            Core.rectangle(img, mGoal1LArmTopLeft, mGoal1LArmBottomRight, RED, -1);
+            Core.rectangle(img, mGoal1RArmTopLeft, mGoal1RArmBottomRight, RED, -1);
+        }
+        else {
+            Core.rectangle(img, mGoal2TopLeft, mGoal2BottomRight, RED, -1);
+            Core.rectangle(img, mGoal2LArmTopLeft, mGoal2LArmBottomRight, RED, -1);
+            Core.rectangle(img, mGoal2RArmTopLeft, mGoal2RArmBottomRight, RED, -1);
+        }
     }
 
     private void setPassingDirection(Mat img) {
@@ -532,9 +538,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
             // Move the ball to the closest centroid to the ball.
             if (mTracking) {
                 Point closestEuglenaLocation = findClosestEuglenaToBall(frame);
-                if (closestEuglenaLocation != null) {
-                    mSoccerGame.updateBallLocation(closestEuglenaLocation, timeDelta);
-                }
+                mSoccerGame.updateBallLocation(closestEuglenaLocation, timeDelta);
             }
 
             blinkingArrow(frame);
@@ -561,10 +565,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
         if ((mSoccerGame.getTimeLeftInTurn() / 1000) % 2 == 0) {
             Scalar color;
-            SoccerGame.Direction currentDirection = mSoccerGame.getCurrentTurn();
+            SoccerGame.Direction currentDirection = mSoccerGame.getCurrentFieldDirection();
             if (currentDirection == SoccerGame.Direction.RIGHT) {
                 // Red
-                color = new Scalar(255, 68, 68);
+                color = RED;
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
                 Core.line(img, point1, point2, color, 3);
@@ -574,7 +578,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
                 Core.line(img, point4, point2, color, 3);
             } else {
                 // Blue
-                color = new Scalar(51, 181, 229);
+                color = RED;
                 Point point1 = new Point(img.cols() / 2 - 100, img.rows() / 2);
                 Point point2 = new Point(img.cols() / 2 + 100, img.rows() / 2);
                 Core.line(img, point1, point2, color, 3);
