@@ -51,12 +51,12 @@
             android:onClick="startTutorial"/>
 
         <Button
-            android:id="@+id/instructButton"
+            android:id="@+id/highScoresButton"
             android:layout_height="wrap_content"
             android:layout_columnSpan="1"
             android:layout_gravity="fill_horizontal"
-            android:onClick="onInstructionsPressed"
-            android:text="Rules"/>
+            android:onClick="onHighScoresClicked"
+            android:text="High Scores"/>
 
         <Button
             android:id="@+id/infoButton"

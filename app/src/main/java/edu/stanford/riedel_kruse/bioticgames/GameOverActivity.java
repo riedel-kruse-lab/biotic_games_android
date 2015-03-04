@@ -88,8 +88,9 @@ public class GameOverActivity extends Activity {
 
         Intent intent = getIntent();
         int time = intent.getIntExtra(GameActivity.EXTRA_TIME, -1);
+
+        mNewHighScoreIndex = -1;
         if (time != -1) {
-            mNewHighScoreIndex = -1;
 
             for (int i = 0; i < times.size(); i++) {
                 if (time < times.get(i)) {
@@ -116,6 +117,12 @@ public class GameOverActivity extends Activity {
 
             TextView resultsTextView = (TextView) findViewById(R.id.results);
             resultsTextView.setText(resultsString);
+        }
+        else {
+            TextView gameOverLabel = (TextView) findViewById(R.id.game_over_label);
+            gameOverLabel.setVisibility(View.GONE);
+            TextView resultsTextView = (TextView) findViewById(R.id.results);
+            resultsTextView.setVisibility(View.GONE);
         }
     }
 

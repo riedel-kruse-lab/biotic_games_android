@@ -32,23 +32,6 @@ public class MainActivity extends Activity
         startActivity(intent);
     }
 
-    public void onInstructionsPressed(View v) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Instructions");
-        builder.setMessage("Try to score the ball into the other player's goal to win! " +
-                        "You get 2 points for carrying the ball into the goal, and 1 point for passing it in.\n\n" +
-                        "Control the Euglena with the joystick, and pass the ball by tapping the Pass button. \n\n" +
-                        "When time runs out, there is a short pause to hand off the controller to the other player."
-        );
-        builder.setCancelable(false);
-        builder.setPositiveButton("Got it!", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-        builder.show();
-    }
-
-
     public void infoButtonPressed(View v) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("About Euglena:");
@@ -79,5 +62,8 @@ public class MainActivity extends Activity
         builder.show();
     }
 
-
+    public void onHighScoresClicked(View v) {
+        Intent intent = new Intent(this, GameOverActivity.class);
+        startActivity(intent);
+    }
 }
