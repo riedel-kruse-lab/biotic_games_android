@@ -39,6 +39,8 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
             "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
+    public static final String EXTRA_TIME =
+            "edu.stanford.riedel-kruse.bioticgames.GameActivity.TIME";
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
@@ -50,7 +52,7 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
 
     private Button mActionButton;
 
-    private long mTime;
+    private int mTime;
     private ScheduledExecutorService mScheduledTaskExecutor;
 
     private Tutorial mTutorial;
@@ -208,23 +210,11 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public void onGameOver() {
 
         stopTimer();
+        finish();
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                AlertDialog.Builder builder = new AlertDialog.Builder(GameActivity.this);
-                builder.setTitle("Game Over!");
-                builder.setCancelable(false);
-                builder.setPositiveButton("Keep playing!", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        mSoccerGame.resumeCountdown();
-                    }
-                });
-                builder.show();
-
-                mSoccerGame.reset();
-            }
-        });
+        Intent intent = new Intent(this, GameOverActivity.class);
+        intent.putExtra(EXTRA_TIME, mTime);
+        startActivity(intent);
     }
 
     public void onNonzeroVelocity() {
@@ -786,6 +776,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     public void actionButtonPressed(View v) {
+        if (mSoccerGame == null) {
+            return;
+        }
+
         if (mSoccerGame.getVelocity() > 0) {
             mSoccerGame.passBall();
         }
