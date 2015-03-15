@@ -12,8 +12,7 @@
         android:textSize="35sp"
         android:gravity="center_horizontal"
         android:text="Euglena Soccer"
-        android:textStyle="bold"
-        android:typeface="monospace"/>
+        android:textStyle="bold"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -64,7 +63,7 @@
             android:layout_columnSpan="1"
             android:layout_gravity="fill_horizontal"
             android:onClick="infoButtonPressed"
-            android:text="Biotics"/>
+            android:text="Biotics Info"/>
 
         <Button
             android:id="@+id/creditButton"
