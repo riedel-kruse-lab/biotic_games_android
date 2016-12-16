@@ -32,13 +32,10 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     public static final String TAG = "edu.stanford.riedel-kruse.bioticgames.GameActivity";
     public static final String EXTRA_TUTORIAL_MODE =
             "edu.stanford.riedel-kruse.bioticgames.GameActivity.TUTORIAL_MODE";
-    public static final boolean DEBUG_MODE = true;
-    public static final int NUM_DEBUG_VIEWS = 1;
     public static final int GOAL_HEIGHT = 400;
     public static final int GOAL_WIDTH = 10;
     public static final int GOAL_EMPTY_WIDTH = 40;  //Width of empty space of the goal
     public static final int SWAP_TIME = 5000;
-    public static final int MILLISECONDS_BEFORE_BALL_AUTO_ASSIGN = 5000;
 
     private Tutorial mTutorial;
     private boolean mTutorialMode;
@@ -52,8 +49,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     private boolean mCountingDown;
 
     private SoccerGame mSoccerGame;
-
-    private ImageView[] mDebugImageViews;
 
     private boolean mSwapping;
     private long mSwapCountdown;
@@ -71,9 +66,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     private Point mGoal2LArmBottomRight;
     private Point mGoal2RArmTopLeft;
     private Point mGoal2RArmBottomRight;
-
-    public float tapX = 0;
-    public float tapY = 0;
 
     /**
      * Activity lifecycle callbacks
@@ -103,23 +95,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         }
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        if (DEBUG_MODE) {
-            mDebugImageViews = new ImageView[NUM_DEBUG_VIEWS];
-            createDebugViews(NUM_DEBUG_VIEWS);
-        }
-    }
-
-    private void createDebugViews(int numViews) {
-        RelativeLayout layout = (RelativeLayout) findViewById(R.id.zoomView);
-
-        for (int i = 0; i < numViews; i++) {
-            ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                    LayoutParams.MATCH_PARENT, 1));
-            layout.addView(imageView);
-            mDebugImageViews[i] = imageView;
-        }
     }
 
     private Point findClosestEuglenaToBall(Mat frame) {
@@ -215,7 +190,6 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
     }
 
     public void onChangedTurn(final SoccerGame.Turn currentTurn) {
-        // TODO: Freeze the game for some time so players can switch without stress.
         mSwapping = true;
         mSwapCountdown = SWAP_TIME;
         updateSwapCountdown();
@@ -653,7 +627,3 @@ public class GameActivity extends BioticGameActivity implements SoccerGameDelega
         startActivity(intent);
     }
 }
-
-/* to turn off autofocus:
-http://answers.opencv.org/question/21377/how-turn-off-autofocus-with-camerabridgeviewbase/
- */

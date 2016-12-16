@@ -189,7 +189,6 @@ public class SoccerGame {
 
     /**
      * Updates the internal state of the soccer game with a new location for the ball.
-     *
      * @param newLocation The new location of the ball.
      */
     public void updateBallLocation(Point newLocation) {
@@ -348,13 +347,9 @@ public class SoccerGame {
      * @return true if the ball is out of bounds, false otherwise.
      */
     private boolean checkForOutOfBounds() {
-        if (mBallLocation.x <= BOUNDS_BUFFER || mBallLocation.y <= BOUNDS_BUFFER ||
+        return mBallLocation.x <= BOUNDS_BUFFER || mBallLocation.y <= BOUNDS_BUFFER ||
                 mBallLocation.x >= mFieldWidth - BOUNDS_BUFFER ||
-                mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER) {
-            return true;
-        }
-
-        return false;
+                mBallLocation.y >= mFieldHeight - BOUNDS_BUFFER;
     }
 
     /**
@@ -403,18 +398,6 @@ public class SoccerGame {
         }
     }
 
-    public void setPickupButtonPressedTrue() {
-        pickupButtonPressed = true;
-    }
-
-    public boolean turnCountGreaterThan() {
-        if (mTurnCount > NUM_TURNS_PER_GAME) {
-            return true;
-        }
-
-        return false;
-    }
-
     public String getWinningPlayer() {
         if (mRedPlayerPoints > mBluePlayerPoints) {
             return "Red Player Wins!\n\n" +
@@ -437,10 +420,6 @@ public class SoccerGame {
                     "\n   Max Speed: " + roundDown2(mMaxBlueSpeed) + " um/s";
 
         }
-    }
-
-    public Rect returnMBlueGoal() {
-        return mBlueGoal;
     }
 
     public void updateSpeed() {
@@ -476,10 +455,6 @@ public class SoccerGame {
 
     public void resumeCountdown() {
         mCountdownPaused = false;
-    }
-
-    public boolean returnCountdownPaused() {
-        return mCountdownPaused;
     }
 
     public static double roundDown2(double d) {
