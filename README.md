@@ -1,6 +1,9 @@
 # Link to LudusScope paper
 http://journals.plos.org/plosone/article?id=info%3Adoi/10.1371/journal.pone.0162602
 
+# Link to STL Files
+https://www.thingiverse.com/thing:1721580
+
 # Biotic Soccer Game for Android
 This repository includes sample code that utilizes the Biotic Games SDK to create a simple Soccer Game.
 
